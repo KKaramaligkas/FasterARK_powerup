@@ -34,7 +34,7 @@ For `PSP` users on older `Custom Firmware`:
 - `DC10` should boot up, choose the first option (Install 6.61 ARK) and wait for it to finish.
  
 For new `PS Vita` users:
-- Requires the latest version of `NoPspEmuDrm_mod`: https://github.com/PSP-Arkfive/NoPspEmuDrmArkMod/releases/tag/2026-06-09
+- Requires the latest version of `NoPspEmuDrm_mod`: https://github.com/PSP-Arkfive/NoPspEmuDrmArkMod/releases/latest
 - Download `FasterARK_psvita.vpk`
 - `Install` using VitaShell.
 - Run `FasterARK` and choose first option.
