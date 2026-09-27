@@ -96,10 +96,6 @@ void drawMenu(){
             tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, cur_x, cur_y+5, options[i], WHITE_COLOR, NULL);
         cur_y += 10;
     }
-
-    if (msg[0]){
-        tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, 480-8*strlen(msg), TOP+15, msg, msg_colors[msg_type], NULL);
-    }
 }
 
 int drawthread(SceSize args, void *argp){
@@ -109,10 +105,16 @@ int drawthread(SceSize args, void *argp){
         ya2d_clear_screen(CLEAR_COLOR);
         
         ya2d_draw_texture(background, 0, 0);
-        ya2d_draw_texture(icon, 0, 272-icon->height);
+        if (icon) // the menu must still show if an image failed to load
+            ya2d_draw_texture(icon, 0, 272-icon->height);
 
         if (options != NULL && nopts > 0)
             drawMenu();
+
+        // outside the menu so errors raised before it exists (e.g. not running ARK) show too
+        if (msg[0]){
+            tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, 480-8*strlen(msg), TOP+15, msg, msg_colors[msg_type], NULL);
+        }
 
         ya2d_finish_drawing();
         ya2d_swapbuffers();
@@ -134,7 +136,7 @@ void loadGraphics(int argc, char** argv){
     background = ya2d_load_PNG_file_offset(argv[0], YA2D_PLACE_RAM, pbp_header.pic1_offset);
     icon = ya2d_load_PNG_file_offset(argv[0], YA2D_PLACE_RAM, pbp_header.icon0_offset);
 
-    snprintf(header, sizeof(header), "ARK Updater %d.%d.%d", ARK_MAJOR_VERSION, ARK_MINOR_VERSION, ARK_MICRO_VERSION);
+    snprintf(header, sizeof(header), "ARK Updater %d.%d.%d%s", ARK_MAJOR_VERSION, ARK_MINOR_VERSION, ARK_MICRO_VERSION, ARK_VERSION_SUFFIX);
 
     SceUID thid = sceKernelCreateThread("draw_thread", &drawthread, 0x10, 0x20000, PSP_THREAD_ATTR_VSH|PSP_THREAD_ATTR_VFPU, NULL);
     if (thid >= 0){

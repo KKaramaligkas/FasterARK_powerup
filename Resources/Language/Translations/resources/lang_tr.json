@@ -188,5 +188,6 @@
     "xmbmsgtop_sysconf_plugins": "Gestionnaire de plug-ins",
     "xmbmsgtop_custom_launcher": "Özel Yükleyici",
     "xmbmsgtop_custom_app": "Özel Uygulama",
-    "xmbmsgtop_150_reboot": "1.50 ARK'a Rebootla"
+    "xmbmsgtop_150_reboot": "1.50 ARK'a Rebootla",
+    "xmbmsg_plugins_category": "Eklentiler"
 }

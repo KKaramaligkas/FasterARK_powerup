@@ -206,6 +206,7 @@
     "xmbmsgtop_sysconf_plugins": "플러그인 관리자",
     "xmbmsgtop_custom_launcher": "커스텀 런처",
     "xmbmsgtop_custom_app": "커스텀 앱",
-    "xmbmsgtop_150_reboot": "1.50 ARK로 재부팅"
+    "xmbmsgtop_150_reboot": "1.50 ARK로 재부팅",
+    "xmbmsg_plugins_category": "플러그인"
 
 }

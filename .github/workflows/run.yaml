@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - main
+      - themes-fixes
+    tags:
+      - 'ARK-*'
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: write
 env:
@@ -39,6 +44,9 @@ jobs:
           psp-pacman -Syyu --noconfirm
           psp-pacman -S ya2d --noconfirm
 
+      - name: Plugin Manager libraries via psp-pacman
+        run: psp-pacman -S --needed curl mbedtls cjson unarr libintrafont libpng zlib bzip2 liblzma --noconfirm
+
       - name: Update psp-cfw-sdk
         run: curl -OJL "https://github.com/pspdev/psp-cfw-sdk/releases/download/latest/psp-cfw-sdk.zip"
       
@@ -59,12 +67,13 @@ jobs:
         working-directory: vdpm
         run: |
           echo VITASDK=/usr/local/vitasdk >> $GITHUB_ENV
-          echo PATH=$VITASDK/bin:$PATH >> $GITHUB_ENV
+          echo /usr/local/vitasdk/bin >> $GITHUB_PATH
           export VITASDK=/usr/local/vitasdk
           export PATH=$VITASDK/bin:$PATH
           ./bootstrap-vitasdk.sh
-          sed -i 's/Box2D//g' include/install-packages.sh
-          yes | ./install-all.sh
+          # install-all.sh goes through vdpm's repo-root script, which still looks for
+          # pacman in $VITASDK/bin; use the SDK's own vdpm and only what PSVita links
+          VDPM_NONINTERACTIVE=1 vdpm install zlib libpng libjpeg-turbo libvita2d taihen
 
       - name:  mkpsxiso
         run: |
@@ -81,6 +90,8 @@ jobs:
           path: dist/*
   release:
     needs: build
+    # other branches and pull requests only build; releasing takes a push to main or an explicit ARK-* tag
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/ARK-')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -88,11 +99,21 @@ jobs:
         with:
           name: FasterARK-release
           path: dist/*.zip
+      - name: Release name
+        id: meta
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "name=${GITHUB_REF_NAME/-/ }" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "name=FasterARK" >> "$GITHUB_OUTPUT"
+          fi
       - name:
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: FasterARK
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
           prerelease: false
           make_latest: true
           files: |

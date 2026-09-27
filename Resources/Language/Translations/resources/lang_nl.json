@@ -195,6 +195,7 @@
     "xmbmsgtop_sysconf_plugins": "Plugins Manager",
     "xmbmsgtop_custom_launcher": "Aangepaste Launcher",
     "xmbmsgtop_custom_app": "Aangepaste app",
-    "xmbmsgtop_150_reboot": "Opnieuw opstarten in 1.50 ARK"
+    "xmbmsgtop_150_reboot": "Opnieuw opstarten in 1.50 ARK",
+    "xmbmsg_plugins_category": "Plugins"
 
 }

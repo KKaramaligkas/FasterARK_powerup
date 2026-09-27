@@ -197,6 +197,7 @@
     "xmbmsgtop_sysconf_plugins": "Plugin-Manager",
     "xmbmsgtop_custom_launcher": "Benutzerdefinierter Launcher",
     "xmbmsgtop_custom_app": "Benutzerdefinierte App",
-    "xmbmsgtop_150_reboot": "Neustart in 1.50 ARK"
+    "xmbmsgtop_150_reboot": "Neustart in 1.50 ARK",
+    "xmbmsg_plugins_category": "Plugins"
 
 }
