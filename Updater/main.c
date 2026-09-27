@@ -96,10 +96,6 @@ void drawMenu(){
             tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, cur_x, cur_y+5, options[i], WHITE_COLOR, NULL);
         cur_y += 10;
     }
-
-    if (msg[0]){
-        tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, 480-8*strlen(msg), TOP+15, msg, msg_colors[msg_type], NULL);
-    }
 }
 
 int drawthread(SceSize args, void *argp){
@@ -114,6 +110,11 @@ int drawthread(SceSize args, void *argp){
 
         if (options != NULL && nopts > 0)
             drawMenu();
+
+        // outside the menu so errors raised before it exists (e.g. not running ARK) show too
+        if (msg[0]){
+            tinyFontPrintTextScreenBuf(ya2d_get_drawbuffer(), msx, 480-8*strlen(msg), TOP+15, msg, msg_colors[msg_type], NULL);
+        }
 
         ya2d_finish_drawing();
         ya2d_swapbuffers();
