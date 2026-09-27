@@ -3,14 +3,14 @@ PSPDEV = $(shell psp-config --pspdev-path)
 BUILDTOOLS = $(PSPDEV)/share/psp-cfw-sdk/build-tools
 
 TARGET = updater
-C_OBJS = main.o updater.o
+C_OBJS = main.o updater.o malloc.o
 OBJS = $(C_OBJS)
 all: $(TARGET).prx
 CFLAGS = -std=c99 -Os -G0 -Wall
 INCDIR = 
 LIBDIR = 
 
-LIBS = -lpspminicrt -lansic -ltinyfont -lya2d -lpng -lz -lpspgum -lpspgu -lpspvram -lpspmalloc -lpspmath -lpspsystemctrl_user -lpspkubridge -lpsppower
+LIBS = -lpspminicrt -lansic -ltinyfont -lya2d -lpng -lz -lpspgum -lpspgu -lpspvram -lpspmath -lpspsystemctrl_user -lpspkubridge -lpsppower
 
 CXXFLAGS = $(CFLAGS)
 ASFLAGS = $(CFLAGS)

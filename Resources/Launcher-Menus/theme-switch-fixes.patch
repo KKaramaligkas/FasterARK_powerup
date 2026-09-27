@@ -1,0 +1,425 @@
+diff --git a/arkMenu/include/browser.h b/arkMenu/include/browser.h
+index b4430ae..0d1bc93 100644
+--- a/arkMenu/include/browser.h
++++ b/arkMenu/include/browser.h
+@@ -202,6 +202,9 @@ class Browser : public SystemEntry{
+         void extractArchive();
+         void installPlugin();
+         void installTheme();
++        void swapTheme(const char* path = NULL);
++        void unloadTheme();
++        void reloadTheme();
+         
+         void copy();
+         void cut();
+diff --git a/arkMenu/include/common.h b/arkMenu/include/common.h
+index c81fa98..75c7d98 100644
+--- a/arkMenu/include/common.h
++++ b/arkMenu/include/common.h
+@@ -110,6 +110,8 @@ namespace common{
+     extern void startLoadingThread();
+     extern void stopLoadingThread();
+     extern void setThemePath(char* path = NULL);
++    extern const char* getThemePath();
++    extern bool isThemeValid(const char* path);
+     extern bool isFolder(SceIoDirent* dit);
+     extern bool fileExists(const std::string &path);
+     extern bool folderExists(const std::string &path);
+diff --git a/arkMenu/include/gamemgr.h b/arkMenu/include/gamemgr.h
+index 4f692d2..4f17f80 100644
+--- a/arkMenu/include/gamemgr.h
++++ b/arkMenu/include/gamemgr.h
+@@ -94,6 +94,11 @@ class GameManager : public SystemEntry{
+         
+         // update game list if specific path has changed
+         static void updateGameList(const char* path);
++
++        // theme images are about to be freed: stop the icon/scan thread and drop all entries
++        static void stopForThemeChange();
++        // new theme is loaded: restart the icon/scan thread so entries are rebuilt with it
++        static void restartAfterThemeChange();
+         
+         /* obtain the currently selected entry */
+         Entry* getEntry();
+diff --git a/arkMenu/src/browser.cpp b/arkMenu/src/browser.cpp
+index ad21e0e..981fe34 100644
+--- a/arkMenu/src/browser.cpp
++++ b/arkMenu/src/browser.cpp
+@@ -178,13 +178,9 @@ void Browser::update(Entry* ent, bool skip_prompt){
+         installTheme();
+     }
+     else if (Entry::isVideo(e->getPath().c_str())){
+-        GameManager::updateGameList(NULL);
+-        SystemMgr::pauseDraw();
+-        common::deleteTheme();
++        unloadTheme(); // frees the theme's memory for the player
+         pspavPlayVideoFile(e->getPath().c_str(), &arkmenu_av_callbacks);
+-        common::loadTheme();
+-        common::stopLoadingThread();
+-        SystemMgr::resumeDraw();
++        reloadTheme();
+     }
+     else if (e->getFileType() == FOLDER){
+         string full_path = e->getFullPath();
+@@ -291,26 +287,28 @@ void Browser::installTheme() {
+     delete aux;
+ 
+     if (ret == OPTIONS_CANCELLED)  {
+-        SystemMgr::pauseDraw();
+-        common::deleteTheme();
+-        common::setThemePath();
+-        common::loadTheme();
+-        common::stopLoadingThread();
+-        SystemMgr::resumeDraw();
++        // nothing changed, only go back if a previewed theme is still in use
++        if (strcmp(common::getThemePath(), THEME_NAME) != 0)
++            swapTheme();
++        return;
++    }
++
++    // refuse a broken package before freeing the current theme, it would lock us in the missing file screen
++    if (!common::isThemeValid(e->getPath().c_str())){
++        t_options_entry error_entries[] = {
++            {OPTIONS_CANCELLED, "Invalid or incomplete theme"},
++        };
++        optionsmenu = new OptionsMenu("Install Theme", sizeof(error_entries)/sizeof(t_options_entry), error_entries);
++        optionsmenu->control();
++        OptionsMenu* aux = optionsmenu;
++        optionsmenu = NULL;
++        delete aux;
+         return;
+     }
+ 
+     // load new theme
+-    GameManager::updateGameList(NULL);
+-    SystemMgr::pauseDraw();
+-    printf("deleting current theme resources\n");
+-    common::deleteTheme();
+     printf("set new theme path to: %s\n", e->getPath().c_str());
+-    common::setThemePath((char*)e->getPath().c_str());
+-    printf("loading new theme\n");
+-    common::loadTheme();
+-    common::stopLoadingThread();
+-    SystemMgr::resumeDraw();
++    swapTheme(e->getPath().c_str());
+     printf("done\n");
+ 
+     // Ask before overwriting theme
+@@ -331,18 +329,41 @@ void Browser::installTheme() {
+         }
+         else if (ret == OPTIONS_CANCELLED){
+             // reset back to default theme
+-            SystemMgr::pauseDraw();
+-            common::deleteTheme();
+-            common::setThemePath();
+-            common::loadTheme();
+-            common::stopLoadingThread();
+-            SystemMgr::resumeDraw();
++            swapTheme();
+             return;
+         }
+     }
+ 
++    // the loaded theme keeps reading from its package: use the installed copy before replacing it
+     deleteFile(THEME_NAME);
+     copyFile(e->getPath(), common::ark_config.arkpath);
++    if (common::fileExists(THEME_NAME))
++        common::setThemePath();
++}
++
++void Browser::swapTheme(const char* path){
++    unloadTheme();
++    common::setThemePath((char*)path);
++    reloadTheme();
++}
++
++void Browser::unloadTheme(){
++    // Everything holding a pointer to the current theme's images or sound must
++    // let go of it before the theme is freed, otherwise it is used after free.
++    // Drawing stays paused until reloadTheme().
++    GameManager::stopForThemeChange(); // game entries and the icon/scan thread
++    SystemMgr::pauseDraw();
++    for (int i=0; i<entries->size(); i++){
++        entries->at(i)->freeIcon(); // browser icons may be the theme's NOICON
++    }
++    common::deleteTheme();
++}
++
++void Browser::reloadTheme(){
++    common::loadTheme();
++    common::stopLoadingThread();
++    SystemMgr::resumeDraw();
++    GameManager::restartAfterThemeChange();
+ }
+ 
+ int Browser::loadStartModule(string modpath, bool wait_on_ok){
+diff --git a/arkMenu/src/common.cpp b/arkMenu/src/common.cpp
+index 61e058a..a814f0e 100644
+--- a/arkMenu/src/common.cpp
++++ b/arkMenu/src/common.cpp
+@@ -327,15 +327,21 @@ SceOff common::findPkgOffset(const char* filename, unsigned* size, const char* p
+     char name[64];
+            
+     while (offset != 0xFFFFFFFF){
+-        sceIoRead(pkg, &offset, 4);
++        // a truncated or corrupt package never reaches the end marker, stop at EOF instead of looping forever
++        if (sceIoRead(pkg, &offset, 4) != 4)
++            offset = 0xFFFFFFFF;
+         if (offset == 0xFFFFFFFF){
+             sceIoClose(pkg);
+             missinghandler(filename);
+             return 0;
+         }
+-        unsigned namelength;
+-        sceIoRead(pkg, &namelength, 4);
+-        sceIoRead(pkg, name, namelength+1);
++        unsigned namelength = 0;
++        if (sceIoRead(pkg, &namelength, 4) != 4 || namelength >= sizeof(name)
++                || sceIoRead(pkg, name, namelength+1) != (int)namelength+1){
++            sceIoClose(pkg);
++            missinghandler(filename);
++            return 0;
++        }
+                    
+         if (!strncmp(name, filename, namelength)){
+             sceIoRead(pkg, &size2, 4);
+@@ -605,7 +611,54 @@ void common::deleteTheme(){
+     }
+     delete checkbox[0];
+     delete checkbox[1];
+-    delete sound_mp3;
++    checkbox[0] = checkbox[1] = NULL;
++    delete sound_mp3; // stops the menu sound first if it is still playing
++    sound_mp3 = NULL;
++}
++
++static bool isPNGAt(SceUID fd, SceOff offset){
++    static const u8 signature[8] = {0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
++    u8 header[16];
++    sceIoLseek(fd, offset, PSP_SEEK_SET);
++    return sceIoRead(fd, header, sizeof(header)) == sizeof(header)
++        && memcmp(header, signature, sizeof(signature)) == 0
++        && memcmp(header+12, "IHDR", 4) == 0;
++}
++
++bool common::isThemeValid(const char* path){
++    // everything loadTheme() needs: a missing one locks the launcher in the missing file screen,
++    // one that is not a PNG (e.g. a renamed JPEG) loads as a NULL texture that gets dereferenced
++    static const char* required[] = {
++        "WAIT.PNG", "SPRITE.PNG", "NOICON.PNG", "GAME.PNG", "FTP.PNG", "SETTINGS.PNG",
++        "BROWSER.PNG", "BOX.PNG", "EXIT.PNG", "PLUGINS.PNG", "FOLDER.PNG", "FILE.PNG",
++        "TXT.PNG", "PBP.PNG", "PRX.PNG", "ISO.PNG", "ZIP.PNG", "MUSIC.PNG", "PICTURE.PNG",
++        "CHECK.PNG", "UNCHECK.PNG",
++    };
++    SceUID fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
++    if (fd < 0)
++        return false;
++    bool valid = true;
++    for (int i=0; valid && i<(int)(sizeof(required)/sizeof(required[0])); i++){
++        SceOff offset = findPkgOffset(required[i], NULL, path, dummyMissingHandler);
++        valid = offset != 0 && isPNGAt(fd, offset);
++    }
++    if (valid){
++        // same order loadTheme() picks the background in, it must end up with one
++        SceIoStat stat;
++        string custom_path1 = string(ark_config.arkpath) + "BG.JPG";
++        string custom_path2 = string(ark_config.arkpath) + "BG.PNG";
++        SceOff bg_offset = 0;
++        valid = sceIoGetstat(custom_path1.c_str(), &stat) >= 0
++            || sceIoGetstat(custom_path2.c_str(), &stat) >= 0
++            || findPkgOffset("DEFBG.JPG", NULL, path, dummyMissingHandler) != 0
++            || ((bg_offset = findPkgOffset("DEFBG.PNG", NULL, path, dummyMissingHandler)) != 0 && isPNGAt(fd, bg_offset));
++    }
++    sceIoClose(fd);
++    return valid;
++}
++
++const char* common::getThemePath(){
++    return theme_path.c_str();
+ }
+ 
+ void common::deleteData(){
+diff --git a/arkMenu/src/controller.cpp b/arkMenu/src/controller.cpp
+index 3db9d7e..310e370 100644
+--- a/arkMenu/src/controller.cpp
++++ b/arkMenu/src/controller.cpp
+@@ -53,12 +53,15 @@ void Controller::update(int ignore){
+ }
+ 
+ void Controller::flush(){
++    // wait for every button to be released, otherwise the press that opened a menu is
++    // read by it as a new press and immediately selects its first entry
++    do {
++        clCtrlReadBufferPositive();
++    } while (pad.Buttons&0xFFFF);
+     memset(&pad, 0, sizeof(pad));
+     this->nowpad = 0;
+     this->newpad = 0;
+     this->oldpad = 0;
+-    while (pad.Buttons&0xFFFF)
+-        clCtrlReadBufferPositive();
+ }
+ 
+ bool Controller::wait(void* busy_wait){
+diff --git a/arkMenu/src/gamemgr.cpp b/arkMenu/src/gamemgr.cpp
+index 74ab4c9..de553e6 100644
+--- a/arkMenu/src/gamemgr.cpp
++++ b/arkMenu/src/gamemgr.cpp
+@@ -424,6 +424,32 @@ void GameManager::updateGameList(const char* path){
+     }
+ }
+ 
++void GameManager::stopForThemeChange(){
++    if (self == NULL) return;
++    if (self->dynamicIconRunning == ICONS_PAUSED){
++        // let the thread get past the semaphore so it can see the stop request
++        for (int i=0; i<MAX_CATEGORIES; i++)
++            self->categories[i]->resumeIconLoading();
++        sceKernelSignalSema(self->iconSema, 1);
++    }
++    // wait for it to leave loadIconsDynamic()/findEntries(), it must not create entries with the old images
++    self->endAllThreads();
++    SystemMgr::pauseDraw();
++    self->selectedCategory = -1;
++    for (int i=0; i<MAX_CATEGORIES; i++){
++        self->categories[i]->clearEntries();
++    }
++    SystemMgr::resumeDraw();
++}
++
++void GameManager::restartAfterThemeChange(){
++    if (self == NULL) return;
++    self->selectedCategory = -1; // rescan
++    self->dynamicIconRunning = ICONS_LOADING;
++    self->iconThread = sceKernelCreateThread("icon0_thread", GameManager::loadIcons, 0x10, 0x2000, PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
++    sceKernelStartThread(self->iconThread, 0, NULL);
++}
++
+ void GameManager::execApp(){
+     if (common::config.fast_gameboot){
+         this->endAllThreads();
+diff --git a/arkMenu/src/image.cpp b/arkMenu/src/image.cpp
+index 33fe0bb..849f635 100644
+--- a/arkMenu/src/image.cpp
++++ b/arkMenu/src/image.cpp
+@@ -2,13 +2,20 @@
+ #include <string>
+ #include <common.h>
+ 
++// NOICON is not loaded yet while a theme is being loaded
++static ya2d_texture* noIconTexture(){
++    Image* noicon = common::getImage(IMAGE_NOICON);
++    return (noicon)? noicon->getTexture() : NULL;
++}
++
+ Image::Image(){
++    this->texture = NULL;
+     this->is_system_image = false;
+ }
+ 
+ Image::Image(ya2d_texture* tex){
+     if (tex == NULL){
+-        this->texture = common::getImage(IMAGE_NOICON)->texture;
++        this->texture = noIconTexture();
+         this->is_system_image = true;
+     }
+     else {
+@@ -18,6 +25,7 @@ Image::Image(ya2d_texture* tex){
+ }
+ 
+ Image::Image(string filename, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
+     string ext = common::getExtension(filename);
+     if (ext == "png"){
+@@ -30,13 +38,15 @@ Image::Image(string filename, int place){
+         this->texture = ya2d_load_BMP_file(filename.c_str(), place);
+     }
+     if (this->texture == NULL){
+-        this->texture = common::getImage(IMAGE_NOICON)->texture;
++        this->texture = noIconTexture();
+         this->is_system_image = true;
+     }
+ }
+ 
+ Image::Image(void* buffer, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
++    if (buffer == NULL) return;
+     u32 magic = *(u32*)buffer;
+     if (magic == PNG_MAGIC)
+         this->texture = ya2d_load_PNG_buffer(buffer, place);
+@@ -45,7 +55,9 @@ Image::Image(void* buffer, int place){
+ }
+ 
+ Image::Image(void* buffer, unsigned long buffer_size, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
++    if (buffer == NULL) return;
+     if ( (*(u32*)buffer & 0x0000FFFF) == JPG_MAGIC && strcmp((char*)buffer+0x6, "JFIF") == 0)
+         this->texture = ya2d_load_JPEG_buffer(buffer, buffer_size, place);
+ }
+diff --git a/arkMenu/src/mp3.cpp b/arkMenu/src/mp3.cpp
+index 88dfad0..774bfd7 100644
+--- a/arkMenu/src/mp3.cpp
++++ b/arkMenu/src/mp3.cpp
+@@ -2,6 +2,10 @@
+ #include "debug.h"
+ 
+ static SceUID mp3Thread = -1;
++static MP3* volatile active_mp3 = NULL; // object whose data the playback thread is reading
++// pspavIsMP3Active() only turns true once the thread has started decoding, so two quick
++// play() calls would start two players fighting over the decoder and audio channel
++static volatile bool thread_running = false;
+ static SceUID mp3_mutex = sceKernelCreateSema("mp3_mutex", 0, 1, 1, 0);
+ 
+ 
+@@ -31,6 +35,13 @@ MP3::MP3(const char* filename, bool to_buffer){
+ }
+ 
+ MP3::~MP3(){
++    // the playback thread reads our buffer and fields, so it must end before we free them
++    if (active_mp3 == this){
++        pspavStopMP3Playback();
++        SceUInt timeout = 3000000;
++        if (sceKernelWaitThreadEnd(mp3Thread, &timeout) < 0 && active_mp3 == this)
++            return; // still stuck in playback: leak the buffer rather than hang or free it under the thread
++    }
+     if (this->buffer != NULL)
+         free(this->buffer);
+ }
+@@ -45,10 +56,19 @@ int MP3::getBufferSize(){
+ 
+ void MP3::play(){
+     sceKernelWaitSema(mp3_mutex, 1, 0);
+-    if (!pspavIsMP3Active()){
++    if (!thread_running && !pspavIsMP3Active()){
+         void* self = (void*)this;
+-        mp3Thread = sceKernelCreateThread("", (SceKernelThreadEntry)MP3::playThread, 0x10, 0x10000, PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
+-        sceKernelStartThread(mp3Thread,  sizeof(self), &self);
++        SceUID thid = sceKernelCreateThread("", (SceKernelThreadEntry)MP3::playThread, 0x10, 0x10000, PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
++        if (thid >= 0){
++            thread_running = true;
++            active_mp3 = this;
++            mp3Thread = thid;
++            if (sceKernelStartThread(thid, sizeof(self), &self) < 0){
++                sceKernelDeleteThread(thid);
++                active_mp3 = NULL;
++                thread_running = false;
++            }
++        }
+     }
+     sceKernelSignalSema(mp3_mutex, 1);
+ }
+@@ -74,7 +94,10 @@ int MP3::playThread(SceSize _args, void** _argp)
+ {
+     MP3* self = (MP3*)(*_argp);
+     pspavPlayMP3File((char*)self->filename, self->buffer, self->buffer_size);
+-    if (self->on_music_end) self->on_music_end(self);
++    void (*on_music_end)(MP3*) = self->on_music_end;
++    if (active_mp3 == self) active_mp3 = NULL;
++    thread_running = false; // before the callback, it may start the next song
++    if (on_music_end) on_music_end(self);
+     sceKernelExitDeleteThread(0);
+     return 0;
+ }

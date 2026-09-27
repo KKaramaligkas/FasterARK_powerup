@@ -19,6 +19,7 @@
 
 
 #define BUF_SIZE 16*1024
+#define RESTART_DELAY 10 // seconds
 
 enum {
     LITE_INSTALL,
@@ -522,8 +523,8 @@ int updateARK(){
         "Please Wait..."
     };
     static char* exitopts[] = {
-        "[] - Delete Updater and Exit",
-        "/\\ - Exit",
+        "X/O - Restart now",
+        "[] - Delete Updater and Restart",
     };
 
     ARKConfig* ac = &ark_config;
@@ -591,8 +592,25 @@ int updateARK(){
     options = exitopts;
     nopts = NELEMS(exitopts);
 
+    // restart on our own after a countdown so the updated ARK is loaded right away
+    char countdown[64];
+    int shown = -1;
+    u32 start = sceKernelGetSystemTimeLow();
     while (1)
     {
+        int left = RESTART_DELAY - (int)((sceKernelGetSystemTimeLow() - start) / 1000000);
+        if (left <= 0)
+        {
+            setInfoMsg(INFO_MSG, "Restarting...");
+            break;
+        }
+        if (left != shown)
+        {
+            snprintf(countdown, sizeof(countdown), "Update finished! Restarting in %d...", left);
+            setInfoMsg(INFO_MSG, countdown);
+            shown = left;
+        }
+
         SceCtrlData pad;
         sceCtrlReadBufferPositive(&pad, 1);
         if (pad.Buttons & PSP_CTRL_SQUARE)
@@ -601,18 +619,22 @@ int updateARK(){
             char* c = strrchr(eboot_path, '/');
             *c = 0;
             sceIoRmdir(eboot_path);
-            setInfoMsg(INFO_MSG, "Updater deleted, exiting...");
+            setInfoMsg(INFO_MSG, "Updater deleted, restarting...");
             break;
         }
-        else if (pad.Buttons & PSP_CTRL_TRIANGLE)
+        else if (pad.Buttons & (PSP_CTRL_CROSS|PSP_CTRL_CIRCLE))
         {
-            setInfoMsg(INFO_MSG, "Exiting...");
+            setInfoMsg(INFO_MSG, "Restarting...");
             break;
         }
         sceKernelDelayThread(10000);
     }
 
     sceKernelDelayThread(1000000);
+
+    // restart through ARK rather than a cold reset: the updated files get loaded and ARK
+    // stays active, also on consoles without the Custom IPL
+    sctrlKernelExitVSH(NULL);
 
     return 0;
 }

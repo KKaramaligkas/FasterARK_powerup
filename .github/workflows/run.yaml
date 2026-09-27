@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+      - themes-fixes
+    tags:
+      - 'ARK-*'
   pull_request:
   workflow_dispatch:
 permissions:
@@ -87,7 +90,8 @@ jobs:
           path: dist/*
   release:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # other branches and pull requests only build; releasing takes a push to main or an explicit ARK-* tag
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/ARK-')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -95,11 +99,21 @@ jobs:
         with:
           name: FasterARK-release
           path: dist/*.zip
+      - name: Release name
+        id: meta
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "name=${GITHUB_REF_NAME/-/ }" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "name=FasterARK" >> "$GITHUB_OUTPUT"
+          fi
       - name:
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: FasterARK
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
           prerelease: false
           make_latest: true
           files: |
