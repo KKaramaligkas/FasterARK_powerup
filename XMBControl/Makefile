@@ -12,6 +12,7 @@ OBJS = main.o stub.o \
 	src/vshgu.o \
 	src/vshmenu.o \
 	src/vshcube.o \
+	src/pluginmanager.o \
 
 CFLAGS = -std=c99 -Oz -G0 -Wall -fshort-wchar -fno-pic -mno-check-zero-division
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti

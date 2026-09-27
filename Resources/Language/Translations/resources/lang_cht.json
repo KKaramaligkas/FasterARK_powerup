@@ -200,6 +200,7 @@
     "xmbmsgtop_sysconf_plugins": "外掛程式管理器",
     "xmbmsgtop_custom_launcher": "自訂啟動器",
     "xmbmsgtop_custom_app": "自訂應用程式",
-    "xmbmsgtop_150_reboot": "重啟進入 1.50 ARK"
+    "xmbmsgtop_150_reboot": "重啟進入 1.50 ARK",
+    "xmbmsg_plugins_category": "外掛程式"
     
 }

@@ -223,6 +223,7 @@
     "xmbmsgtop_sysconf_plugins": "Менеджер плагинов",
     "xmbmsgtop_custom_launcher": "Главное меню ARK",
     "xmbmsgtop_custom_app": "Пользовательское приложение",
-    "xmbmsgtop_150_reboot": "Перезагрузиться в 1.50 ARK"
+    "xmbmsgtop_150_reboot": "Перезагрузиться в 1.50 ARK",
+    "xmbmsg_plugins_category": "Плагины"
     
 }

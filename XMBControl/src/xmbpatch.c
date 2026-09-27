@@ -42,6 +42,7 @@
 #include "settings.h"
 #include "plugins.h"
 #include "battery.h"
+#include "pluginmanager.h"
 
 // TODO: send to pspsdk
 //#define PSP_INIT_APITYPE_EF2 0x152
@@ -383,6 +384,7 @@ SceVshItem *new_item2;
 SceVshItem *new_item3;
 SceVshItem *new_item4;
 SceVshItem *new_item5;
+SceVshItem *new_item6;
 void *xmb_arg0, *xmb_arg1;
 int sysconf_action = 0;
 
@@ -716,6 +718,8 @@ void findAllTranslatableStrings(){
     language_strings[n_translated++].orig = "xmbmsgtop_custom_launcher";
     language_strings[n_translated++].orig = "xmbmsgtop_custom_app";
     language_strings[n_translated++].orig = "xmbmsgtop_150_reboot";
+    language_strings[n_translated++].orig = PM_APP_LABEL;
+    language_strings[n_translated++].orig = PM_CATEGORY_LABEL;
     
     for (int i=0; i<NELEMS(xmbitems); i++){
         language_strings[n_translated++].orig = xmbitems[i].item;
@@ -747,7 +751,7 @@ static int findTranslatableStringIndex(char* line){
 static char* findTranslation(char* text){
     for (int i=0; i<n_translated; i++)
     {
-        if (strcmp(text, language_strings[i].orig) == 0){
+        if (language_strings[i].orig && strcmp(text, language_strings[i].orig) == 0){
             return language_strings[i].translated;
         }
     }
@@ -757,7 +761,7 @@ static char* findTranslation(char* text){
 static int isTranslatableString(char* text){
     for (int i=0; i<n_translated; i++)
     {
-        if (strcmp(text, language_strings[i].orig) == 0){
+        if (language_strings[i].orig && strcmp(text, language_strings[i].orig) == 0){
             return 1;
         }
     }
@@ -891,6 +895,12 @@ int AddVshItemPatched(void *a0, int topitem, SceVshItem *item)
         LoadTextLanguage(-1);
     }
 
+    // Plugins category (replaces the PlayStation Network items)
+    if (sysconf_action && pm_filter_item(a0, topitem, item, AddVshItem, addCustomVshItem,
+            (SceVshItem*)ps_store_item, (SceVshItem*)information_board_item)){
+        return 0;
+    }
+
     if ( !items_added && // prevent adding more than once
         // Game Items
         (strcmp(item->text, "msgtop_game_gamedl")==0 ||
@@ -933,6 +943,12 @@ int AddVshItemPatched(void *a0, int topitem, SceVshItem *item)
             new_item3 = addCustomVshItem(83, "xmbmsgtop_custom_launcher", sysconf_custom_launcher_arg, (cur_icon)?item:(SceVshItem*)information_board_item);
             AddVshItem(a0, topitem, new_item3);
         }
+
+        // Add Plugin Manager (if installed)
+        if (pm_app_installed()){
+            new_item6 = addCustomVshItem(85, PM_APP_LABEL, sysconf_plugin_manager_arg, (cur_icon)?item:(SceVshItem*)information_board_item);
+            AddVshItem(a0, topitem, new_item6);
+        }
         
         // Add Custom App (if found)
         custom_app_path[0] = 'e';
@@ -973,6 +989,8 @@ int OnXmbContextMenuPatched(void *arg0, void *arg1)
 {
     new_item->context = NULL;
     new_item2->context = NULL;
+    if (new_item6) new_item6->context = NULL;
+    pm_clear_contexts();
     return OnXmbContextMenu(arg0, arg1);
 }
 
@@ -1002,6 +1020,9 @@ int ExecuteActionPatched(int action, int action_arg)
         }
         else if (action_arg == sysconf_150_reboot_arg){
         	exec_150_reboot();
+        }
+        else if (pm_is_action(action_arg)){
+            pm_execute_action(action_arg);
         }
         else is_cfw_config = 0;
     }
@@ -1203,6 +1224,17 @@ wchar_t *scePafGetTextPatched(void *a0, char *name)
 {
     if(name)
     {
+        const char* plugin_title = pm_plugin_title(name);
+        if (plugin_title){
+            utf8_to_unicode((wchar_t *)user_buffer, (char *)plugin_title);
+            return (wchar_t *)user_buffer;
+        }
+        if (strcmp(name, "msg_psn") == 0 && pm_category_enabled()){
+            char* translated = findTranslation(PM_CATEGORY_LABEL);
+            utf8_to_unicode((wchar_t *)user_buffer, (translated)? translated : "Plugins");
+            return (wchar_t *)user_buffer;
+        }
+
         if(is_cfw_config == 1 || strncmp(name, "xmbmsg", 6)==0)
         {
             char* translated = findTranslation(name);
@@ -1226,6 +1258,10 @@ wchar_t *scePafGetTextPatched(void *a0, char *name)
                 }
                 else if(strcmp(name, "xmbmsgtop_150_reboot") == 0){
                     translated = "Reboot to 1.50 ARK";
+                    star = STAR;
+                }
+                else if(strcmp(name, PM_APP_LABEL) == 0){
+                    translated = "Plugin Manager";
                     star = STAR;
                 }
                 else if (isTranslatableString(name))

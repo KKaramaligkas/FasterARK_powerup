@@ -202,6 +202,7 @@
     "xmbmsgtop_sysconf_plugins": "プラグインマネージャー",
     "xmbmsgtop_custom_launcher": "カスタムランチャー",
     "xmbmsgtop_custom_app": "カスタムアプリ",
-    "xmbmsgtop_150_reboot": "1.50 ARKに再起動する"
+    "xmbmsgtop_150_reboot": "1.50 ARKに再起動する",
+    "xmbmsg_plugins_category": "プラグイン"
 
 }

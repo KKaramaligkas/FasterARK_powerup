@@ -200,6 +200,7 @@
     "xmbmsgtop_sysconf_plugins": "插件管理器",
     "xmbmsgtop_custom_launcher": "自定义启动器",
     "xmbmsgtop_custom_app": "自定义应用程序",
-    "xmbmsgtop_150_reboot": "重新启动进入 1.50 ARK"
+    "xmbmsgtop_150_reboot": "重新启动进入 1.50 ARK",
+    "xmbmsg_plugins_category": "插件"
     
 }

@@ -195,6 +195,7 @@
     "xmbmsgtop_sysconf_plugins": "Gestione Plugin",
     "xmbmsgtop_custom_launcher": "Custom Launcher",
     "xmbmsgtop_custom_app": "App personalizzata",
-    "xmbmsgtop_150_reboot": "Riavvia in 1.50 ARK"
+    "xmbmsgtop_150_reboot": "Riavvia in 1.50 ARK",
+    "xmbmsg_plugins_category": "Plugin"
 
 }

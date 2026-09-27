@@ -44,6 +44,8 @@ enum {
     sysconf_custom_launcher_arg = 0x1003,
     sysconf_custom_app_arg = 0x1004,
     sysconf_150_reboot_arg = 0x1005,
+    sysconf_plugin_manager_arg = 0x1006,
+    sysconf_pm_plugin_arg = 0x1100, // + plugin number (see pluginmanager.h)
 };
 
 typedef struct
