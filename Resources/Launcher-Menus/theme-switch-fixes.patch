@@ -1,12 +1,14 @@
 diff --git a/arkMenu/include/browser.h b/arkMenu/include/browser.h
-index b4430ae..7fa6e2f 100644
+index b4430ae..0d1bc93 100644
 --- a/arkMenu/include/browser.h
 +++ b/arkMenu/include/browser.h
-@@ -202,6 +202,7 @@ class Browser : public SystemEntry{
+@@ -202,6 +202,9 @@ class Browser : public SystemEntry{
          void extractArchive();
          void installPlugin();
          void installTheme();
 +        void swapTheme(const char* path = NULL);
++        void unloadTheme();
++        void reloadTheme();
          
          void copy();
          void cut();
@@ -40,10 +42,26 @@ index 4f692d2..4f17f80 100644
          /* obtain the currently selected entry */
          Entry* getEntry();
 diff --git a/arkMenu/src/browser.cpp b/arkMenu/src/browser.cpp
-index ad21e0e..347c743 100644
+index ad21e0e..981fe34 100644
 --- a/arkMenu/src/browser.cpp
 +++ b/arkMenu/src/browser.cpp
-@@ -291,26 +291,28 @@ void Browser::installTheme() {
+@@ -178,13 +178,9 @@ void Browser::update(Entry* ent, bool skip_prompt){
+         installTheme();
+     }
+     else if (Entry::isVideo(e->getPath().c_str())){
+-        GameManager::updateGameList(NULL);
+-        SystemMgr::pauseDraw();
+-        common::deleteTheme();
++        unloadTheme(); // frees the theme's memory for the player
+         pspavPlayVideoFile(e->getPath().c_str(), &arkmenu_av_callbacks);
+-        common::loadTheme();
+-        common::stopLoadingThread();
+-        SystemMgr::resumeDraw();
++        reloadTheme();
+     }
+     else if (e->getFileType() == FOLDER){
+         string full_path = e->getFullPath();
+@@ -291,26 +287,28 @@ void Browser::installTheme() {
      delete aux;
  
      if (ret == OPTIONS_CANCELLED)  {
@@ -87,7 +105,7 @@ index ad21e0e..347c743 100644
      printf("done\n");
  
      // Ask before overwriting theme
-@@ -331,18 +333,32 @@ void Browser::installTheme() {
+@@ -331,18 +329,41 @@ void Browser::installTheme() {
          }
          else if (ret == OPTIONS_CANCELLED){
              // reset back to default theme
@@ -110,15 +128,24 @@ index ad21e0e..347c743 100644
 +}
 +
 +void Browser::swapTheme(const char* path){
++    unloadTheme();
++    common::setThemePath((char*)path);
++    reloadTheme();
++}
++
++void Browser::unloadTheme(){
 +    // Everything holding a pointer to the current theme's images or sound must
 +    // let go of it before the theme is freed, otherwise it is used after free.
++    // Drawing stays paused until reloadTheme().
 +    GameManager::stopForThemeChange(); // game entries and the icon/scan thread
 +    SystemMgr::pauseDraw();
 +    for (int i=0; i<entries->size(); i++){
 +        entries->at(i)->freeIcon(); // browser icons may be the theme's NOICON
 +    }
 +    common::deleteTheme();
-+    common::setThemePath((char*)path);
++}
++
++void Browser::reloadTheme(){
 +    common::loadTheme();
 +    common::stopLoadingThread();
 +    SystemMgr::resumeDraw();
@@ -127,7 +154,7 @@ index ad21e0e..347c743 100644
  
  int Browser::loadStartModule(string modpath, bool wait_on_ok){
 diff --git a/arkMenu/src/common.cpp b/arkMenu/src/common.cpp
-index 61e058a..4350fbc 100644
+index 61e058a..a814f0e 100644
 --- a/arkMenu/src/common.cpp
 +++ b/arkMenu/src/common.cpp
 @@ -327,15 +327,21 @@ SceOff common::findPkgOffset(const char* filename, unsigned* size, const char* p
@@ -156,7 +183,7 @@ index 61e058a..4350fbc 100644
                     
          if (!strncmp(name, filename, namelength)){
              sceIoRead(pkg, &size2, 4);
-@@ -605,7 +611,29 @@ void common::deleteTheme(){
+@@ -605,7 +611,54 @@ void common::deleteTheme(){
      }
      delete checkbox[0];
      delete checkbox[1];
@@ -166,20 +193,45 @@ index 61e058a..4350fbc 100644
 +    sound_mp3 = NULL;
 +}
 +
++static bool isPNGAt(SceUID fd, SceOff offset){
++    static const u8 signature[8] = {0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
++    u8 header[16];
++    sceIoLseek(fd, offset, PSP_SEEK_SET);
++    return sceIoRead(fd, header, sizeof(header)) == sizeof(header)
++        && memcmp(header, signature, sizeof(signature)) == 0
++        && memcmp(header+12, "IHDR", 4) == 0;
++}
++
 +bool common::isThemeValid(const char* path){
-+    // everything loadTheme() needs, a missing one would lock the launcher in the missing file screen
++    // everything loadTheme() needs: a missing one locks the launcher in the missing file screen,
++    // one that is not a PNG (e.g. a renamed JPEG) loads as a NULL texture that gets dereferenced
 +    static const char* required[] = {
 +        "WAIT.PNG", "SPRITE.PNG", "NOICON.PNG", "GAME.PNG", "FTP.PNG", "SETTINGS.PNG",
 +        "BROWSER.PNG", "BOX.PNG", "EXIT.PNG", "PLUGINS.PNG", "FOLDER.PNG", "FILE.PNG",
 +        "TXT.PNG", "PBP.PNG", "PRX.PNG", "ISO.PNG", "ZIP.PNG", "MUSIC.PNG", "PICTURE.PNG",
 +        "CHECK.PNG", "UNCHECK.PNG",
 +    };
-+    for (int i=0; i<(int)(sizeof(required)/sizeof(required[0])); i++){
-+        if (findPkgOffset(required[i], NULL, path, dummyMissingHandler) == 0)
-+            return false;
++    SceUID fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
++    if (fd < 0)
++        return false;
++    bool valid = true;
++    for (int i=0; valid && i<(int)(sizeof(required)/sizeof(required[0])); i++){
++        SceOff offset = findPkgOffset(required[i], NULL, path, dummyMissingHandler);
++        valid = offset != 0 && isPNGAt(fd, offset);
 +    }
-+    return findPkgOffset("DEFBG.PNG", NULL, path, dummyMissingHandler) != 0
-+        || findPkgOffset("DEFBG.JPG", NULL, path, dummyMissingHandler) != 0;
++    if (valid){
++        // same order loadTheme() picks the background in, it must end up with one
++        SceIoStat stat;
++        string custom_path1 = string(ark_config.arkpath) + "BG.JPG";
++        string custom_path2 = string(ark_config.arkpath) + "BG.PNG";
++        SceOff bg_offset = 0;
++        valid = sceIoGetstat(custom_path1.c_str(), &stat) >= 0
++            || sceIoGetstat(custom_path2.c_str(), &stat) >= 0
++            || findPkgOffset("DEFBG.JPG", NULL, path, dummyMissingHandler) != 0
++            || ((bg_offset = findPkgOffset("DEFBG.PNG", NULL, path, dummyMissingHandler)) != 0 && isPNGAt(fd, bg_offset));
++    }
++    sceIoClose(fd);
++    return valid;
 +}
 +
 +const char* common::getThemePath(){
@@ -224,6 +276,67 @@ index 74ab4c9..de553e6 100644
  void GameManager::execApp(){
      if (common::config.fast_gameboot){
          this->endAllThreads();
+diff --git a/arkMenu/src/image.cpp b/arkMenu/src/image.cpp
+index 33fe0bb..849f635 100644
+--- a/arkMenu/src/image.cpp
++++ b/arkMenu/src/image.cpp
+@@ -2,13 +2,20 @@
+ #include <string>
+ #include <common.h>
+ 
++// NOICON is not loaded yet while a theme is being loaded
++static ya2d_texture* noIconTexture(){
++    Image* noicon = common::getImage(IMAGE_NOICON);
++    return (noicon)? noicon->getTexture() : NULL;
++}
++
+ Image::Image(){
++    this->texture = NULL;
+     this->is_system_image = false;
+ }
+ 
+ Image::Image(ya2d_texture* tex){
+     if (tex == NULL){
+-        this->texture = common::getImage(IMAGE_NOICON)->texture;
++        this->texture = noIconTexture();
+         this->is_system_image = true;
+     }
+     else {
+@@ -18,6 +25,7 @@ Image::Image(ya2d_texture* tex){
+ }
+ 
+ Image::Image(string filename, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
+     string ext = common::getExtension(filename);
+     if (ext == "png"){
+@@ -30,13 +38,15 @@ Image::Image(string filename, int place){
+         this->texture = ya2d_load_BMP_file(filename.c_str(), place);
+     }
+     if (this->texture == NULL){
+-        this->texture = common::getImage(IMAGE_NOICON)->texture;
++        this->texture = noIconTexture();
+         this->is_system_image = true;
+     }
+ }
+ 
+ Image::Image(void* buffer, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
++    if (buffer == NULL) return;
+     u32 magic = *(u32*)buffer;
+     if (magic == PNG_MAGIC)
+         this->texture = ya2d_load_PNG_buffer(buffer, place);
+@@ -45,7 +55,9 @@ Image::Image(void* buffer, int place){
+ }
+ 
+ Image::Image(void* buffer, unsigned long buffer_size, int place){
++    this->texture = NULL;
+     this->is_system_image = false;
++    if (buffer == NULL) return;
+     if ( (*(u32*)buffer & 0x0000FFFF) == JPG_MAGIC && strcmp((char*)buffer+0x6, "JFIF") == 0)
+         this->texture = ya2d_load_JPEG_buffer(buffer, buffer_size, place);
+ }
 diff --git a/arkMenu/src/mp3.cpp b/arkMenu/src/mp3.cpp
 index 88dfad0..92c3abf 100644
 --- a/arkMenu/src/mp3.cpp
