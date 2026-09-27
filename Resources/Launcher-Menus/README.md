@@ -37,6 +37,15 @@ the theme the same way):
   NOICON texture crashed while a theme was being loaded (NOICON not loaded
   yet), e.g. with an undecodable custom `BG.JPG`.
 - Cancelling the first prompt no longer reloads the theme for nothing.
+- Menus opened with a button press (e.g. the Cancel/Preview/Install prompt of
+  a theme) closed right away: `Controller::flush()` cleared the button state
+  before waiting for release, so it never waited and the menu read the held
+  button as a selection of its first entry.
+- Two quick menu sounds started two MP3 playback threads at once (the
+  "is playing" check only turns true once decoding starts); they fought over
+  the decoder and audio channel and could leave a thread stuck, hanging the
+  launcher after a few presses. Only one playback thread runs now, and
+  deleting a sound never waits on its thread for more than 3 seconds.
 
 With the same toolchain, the rebuilt `VBOOT.PBP` is reproducible: a clean clone at `2457b08` with this
 patch applied builds a byte-identical file.
