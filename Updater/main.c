@@ -109,7 +109,8 @@ int drawthread(SceSize args, void *argp){
         ya2d_clear_screen(CLEAR_COLOR);
         
         ya2d_draw_texture(background, 0, 0);
-        ya2d_draw_texture(icon, 0, 272-icon->height);
+        if (icon) // the menu must still show if an image failed to load
+            ya2d_draw_texture(icon, 0, 272-icon->height);
 
         if (options != NULL && nopts > 0)
             drawMenu();
