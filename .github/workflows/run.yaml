@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - themes-fixes
 permissions:
   contents: write
 env:
@@ -91,10 +92,11 @@ jobs:
       - name:
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: FasterARK
+          tag_name: ${{ github.ref_name == 'main' && 'latest' || 'ARK-5.1.1k' }}
+          name: ${{ github.ref_name == 'main' && 'FasterARK' || 'ARK 5.1.1k' }}
+          target_commitish: ${{ github.sha }}
           prerelease: false
-          make_latest: true
+          make_latest: ${{ github.ref_name == 'main' }}
           files: |
             **/*.zip
             **/*.vpk

@@ -134,7 +134,7 @@ void loadGraphics(int argc, char** argv){
     background = ya2d_load_PNG_file_offset(argv[0], YA2D_PLACE_RAM, pbp_header.pic1_offset);
     icon = ya2d_load_PNG_file_offset(argv[0], YA2D_PLACE_RAM, pbp_header.icon0_offset);
 
-    snprintf(header, sizeof(header), "ARK Updater %d.%d.%d", ARK_MAJOR_VERSION, ARK_MINOR_VERSION, ARK_MICRO_VERSION);
+    snprintf(header, sizeof(header), "ARK Updater %d.%d.%d%s", ARK_MAJOR_VERSION, ARK_MINOR_VERSION, ARK_MICRO_VERSION, ARK_VERSION_SUFFIX);
 
     SceUID thid = sceKernelCreateThread("draw_thread", &drawthread, 0x10, 0x20000, PSP_THREAD_ATTR_VSH|PSP_THREAD_ATTR_VFPU, NULL);
     if (thid >= 0){
