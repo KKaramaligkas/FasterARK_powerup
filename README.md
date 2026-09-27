@@ -11,8 +11,8 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 
 # Plugin Manager
 - In the `XMB` it's `★ Plugin Manager`, right under `★ Custom Launcher`, and it's listed in the `Custom Launcher` too.
-- Installed plugins show up in the `XMB` in a `Plugins` category, which takes the place of the defunct `PlayStation Network` column.
-- To turn the category off, use the app's `Settings`, or hold `START` while the `XMB` loads.
+- Installed plugins can also be listed in the `XMB`, in a `Plugins` category that takes the place of the defunct `PlayStation Network` column. It's off by default: turn it on in the app's `Settings`.
+- If the `XMB` ever fails to start with the category on, hold `START` while the `XMB` loads, then turn the category off in the app.
 - Store format, building and testing: [PluginManager/README.md](PluginManager/README.md).
 
 

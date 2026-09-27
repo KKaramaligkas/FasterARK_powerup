@@ -8,9 +8,10 @@
       knows about (data/xmbnames.txt, written by the app). Selecting a plugin
       opens it in the app (data/launch.txt tells the app which one).
 
-    The column is left alone when the app is missing, when the app turned the
-    category off (data/noxmbcat), or when START is held while the XMB starts
-    (the same button ARK uses to boot without plugins).
+    The category is off unless it was turned on in the app (data/xmbcat).
+    The column is also left alone when the app is missing, or when START is
+    held while the XMB starts (the same button ARK uses to boot without
+    plugins).
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,10 +86,10 @@ int pm_category_enabled(void)
         if (pm_app_installed()) {
             char flag[64];
             SceCtrlData pad;
-            app_file(flag, "data/noxmbcat");
+            app_file(flag, "data/xmbcat");
             memset(&pad, 0, sizeof(pad));
             sceCtrlPeekBufferPositive(&pad, 1);
-            category = !file_exists(flag) && !(pad.Buttons & PSP_CTRL_START);
+            category = file_exists(flag) && !(pad.Buttons & PSP_CTRL_START);
         }
     }
     return category;

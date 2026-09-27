@@ -12,9 +12,9 @@ with the XMB side of FasterARK's [Plugin Manager](../PluginManager):
   items are replaced by the Plugin Manager and the plugins it lists in
   `data/xmbnames.txt`. Picking a plugin writes `data/launch.txt` and starts the
   app on that plugin's page.
-  - The column is left alone when the app is missing, when the app turned the
-    category off (`data/noxmbcat`), or when START is held while the XMB
-    starts.
+  - The category is off unless it was turned on in the app
+    (`data/xmbcat`). The column is also left alone when the app is missing,
+    or when START is held while the XMB starts.
   - The category name can be translated with the `xmbmsg_plugins_category`
     key in `lang_*.json`.
 - Translation lookups skip the `NULL` placeholder of the plugin install
