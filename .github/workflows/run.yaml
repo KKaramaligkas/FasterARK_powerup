@@ -64,12 +64,13 @@ jobs:
         working-directory: vdpm
         run: |
           echo VITASDK=/usr/local/vitasdk >> $GITHUB_ENV
-          echo PATH=$VITASDK/bin:$PATH >> $GITHUB_ENV
+          echo /usr/local/vitasdk/bin >> $GITHUB_PATH
           export VITASDK=/usr/local/vitasdk
           export PATH=$VITASDK/bin:$PATH
           ./bootstrap-vitasdk.sh
-          sed -i 's/Box2D//g' include/install-packages.sh
-          yes | ./install-all.sh
+          # install-all.sh goes through vdpm's repo-root script, which still looks for
+          # pacman in $VITASDK/bin; use the SDK's own vdpm and only what PSVita links
+          VDPM_NONINTERACTIVE=1 vdpm install zlib libpng libjpeg-turbo libvita2d taihen
 
       - name:  mkpsxiso
         run: |
