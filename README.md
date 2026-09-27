@@ -7,6 +7,13 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `Translations`: for both `XMB` and `CL`.
 - `LEDA Plugin`: allows running `1.50 homebrew` on any firmware and psp or vita model.
 - `ARK-150 Addon`: Only usable on 1K, installs the full 1.50 ARK firmware on memory stick to dual boot with latest firmware (installation and usage: https://github.com/PSP-Arkfive/ARK-150).
+- `Plugin Manager`: download, install, update and remove plugins and homebrew over Wi-Fi, like the 3DS's Universal Updater. Also available on its own as `PluginManager.zip`.
+
+# Plugin Manager
+- In the `XMB` it's `★ Plugin Manager`, right under `★ Custom Launcher`, and it's listed in the `Custom Launcher` too.
+- Installed plugins show up in the `XMB` in a `Plugins` category, which takes the place of the defunct `PlayStation Network` column.
+- To turn the category off, use the app's `Settings`, or hold `START` while the `XMB` loads.
+- Store format, building and testing: [PluginManager/README.md](PluginManager/README.md).
 
 
 

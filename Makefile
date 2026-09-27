@@ -1,4 +1,4 @@
-.PHONY: psp vita updater translations
+.PHONY: psp vita updater translations pluginmanager flash0
 
 PY = $(shell which python3)
 PSPDEV = $(shell psp-config --pspdev-path)
@@ -6,9 +6,25 @@ BUILDTOOLS = $(PSPDEV)/share/psp-cfw-sdk/build-tools
 CHOVYSIGNDIR = ./Resources/Chovy-Sign
 CHOVYSIGN = $(CHOVYSIGNDIR)/ChovySign-CLI
 LANGFOLDER = Resources/Language/Translations/resources
+FLASH0 = build/FLASH0.ARK
 
-all: translations themes psp vita updater
+all: translations themes pluginmanager flash0 psp vita updater
 	echo "All Done!"
+
+# Plugin Manager app (PSP/APPS/PluginManager), also released on its own for
+# the store's self-update and for installs without the Full variant
+pluginmanager:
+	make -C PluginManager package
+	mkdir -p dist
+	cp PluginManager/dist/PluginManager.zip dist/
+
+# ARK's FLASH0.ARK with XMBControl built from XMBControl/ (Plugin Manager
+# entry under Custom Launcher and the XMB "Plugins" category)
+flash0:
+	make -C XMBControl
+	mkdir -p build
+	$(PY) $(BUILDTOOLS)/gz/pspgz.py build/ark_xmbctrl.prx $(BUILDTOOLS)/gz/UserModule.hdr XMBControl/xmbctrl.prx XmbControl 0x0000
+	$(PY) tools/flash0.py replace Resources/ARK_01234/FLASH0.ARK $(FLASH0) /kd/ark_xmbctrl.prx=build/ark_xmbctrl.prx
 
 translations:
 	$(PY) $(BUILDTOOLS)/pftools/bdf_to_pf.py $(LANGFOLDER)/satelite_chs_utf8.txt Resources/Language/quan.bdf $(LANGFOLDER)/satelite_chs.txt $(LANGFOLDER)/CHS.pf
@@ -23,12 +39,13 @@ themes:
 	cd dist/tmp/ && zip -m -r themes.zip * && cd ../../ && mv dist/tmp/themes.zip dist/
 	rm -rf dist/tmp
 
-psp: translations
+psp: translations pluginmanager flash0
 	make -C PSP
 #	PSP Lite Install
 	mkdir -p dist/tmp/PSP/GAME/FasterARK/
 	mkdir -p dist/tmp/PSP/SAVEDATA/
 	cp -r Resources/ARK_01234 dist/tmp/PSP/SAVEDATA/
+	cp $(FLASH0) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r Resources/CustomIPL dist/tmp/PSP/GAME/
 	cp PSP/EBOOT.PBP dist/tmp/PSP/GAME/FasterARK/
 	cp Resources/LIBS/ipl_update.prx dist/tmp/PSP/GAME/CustomIPL/
@@ -40,8 +57,11 @@ psp: translations
 #	PSP Full Install
 	mkdir -p dist/tmp/PSP/GAME/FasterARK/
 	mkdir -p dist/tmp/PSP/SAVEDATA/
+	mkdir -p dist/tmp/PSP/APPS/
 	cp -r Resources/ARK_01234 dist/tmp/PSP/SAVEDATA/
+	cp $(FLASH0) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp Resources/Extras/* dist/tmp/PSP/SAVEDATA/ARK_01234/
+	cp -r PluginManager/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
 	cp Resources/Language/Translations/LANG.ARK dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r Resources/CustomIPL dist/tmp/PSP/GAME/
 	cp -r Resources/DC10 dist/tmp/PSP/GAME/
@@ -67,7 +87,7 @@ psp: translations
 	cd dist/tmp/ && zip -m -r FasterARK_psp_full.zip * && cd ../../ && mv dist/tmp/FasterARK_psp_full.zip dist/
 	rm -r dist/tmp/
 
-vita: translations
+vita: translations flash0
 	mkdir -p dist
 	mkdir -p PSVita/res/save
 	mkdir -p PSVita/loader/psp/eboot/iso_files/psp_game/sysdir
@@ -75,6 +95,7 @@ vita: translations
 	mkdir -p PSVita/res/rif
 	mkdir -p PSVita/res/psx/
 	cp -r Resources/ARK_01234 PSVita/res/save/
+	cp $(FLASH0) PSVita/res/save/ARK_01234/
 	cp -r Resources/Extras/* PSVita/res/save/ARK_01234/
 	cp -r Resources/PSVita/* PSVita/res/save/ARK_01234/
 	cp Resources/Language/Translations/LANG.ARK PSVita/res/save/ARK_01234/
@@ -103,11 +124,12 @@ vita: translations
 	cd PSVita/build && cmake .. && make && cd ../../
 	cp PSVita/build/FasterARK.vpk dist/FasterARK_psvita.vpk
 
-updater: translations
+updater: translations flash0
 #	Updater
 	mkdir -p dist/tmp/
 	cp -r Resources/LIBS Updater/Resources/
 	cp -r Resources/ARK_01234 Updater/Resources/
+	cp $(FLASH0) Updater/Resources/ARK_01234/
 	cp Resources/DC10/DC10.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/FLASH150.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/LANG150.ARK Updater/Resources/ARK_01234/
@@ -127,6 +149,7 @@ updater: translations
 
 clean:
 	rm -rf dist
+	rm -rf build
 	rm -rf PSVita/build
 	rm -f PSVita/res/psp/*
 	rm -f PSVita/res/psx/*
@@ -139,6 +162,9 @@ clean:
 	rm -f PSVita/loader/psp/eboot/iso_files/psp_game/ICON0.PNG
 	rm -f PSVita/loader/psp/pboot/ICON0.PNG
 	make -C PSP clean
+	make -C PluginManager clean
+	rm -rf PluginManager/dist
+	make -C XMBControl clean
 	make -C Updater clean
 	make -C Resources/Peops clean
 	make -C PSVita/loader/psp/eboot clean
