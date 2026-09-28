@@ -10,6 +10,7 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `Plugin Manager`: download, install, update and remove plugins and homebrew over Wi-Fi, like the 3DS's Universal Updater. Also available on its own as `PluginManager.zip`.
 
 # Plugin Manager
+- It comes with the `Full` variant, and on a `PSP` the updater (`ARK_UPDATE.zip`) installs or updates it too, keeping its settings and list of installed plugins.
 - In the `XMB` it's `★ Plugin Manager`, right under `★ Custom Launcher`, and it's listed in the `Custom Launcher` too.
 - Installed plugins can also be listed in the `XMB`, in a `Plugins` category that takes the place of the defunct `PlayStation Network` column. It's off by default: turn it on in the app's `Settings`.
 - If the `XMB` ever fails to start with the category on, hold `START` while the `XMB` loads, then turn the category off in the app.
@@ -23,7 +24,7 @@ For `ARK-4` users (any device):
 - Only if `OTA` updates are not working, if you can do `OTA` then use that.
 - Download `ARK_UPDATE.zip` and extract.
 - Copy `PSP` folder to `Memory Stick` (or `pspemu` folder on `PS Vita`)
-- Run the Updater and follow instructions.
+- Run the Updater and follow instructions. On a `PSP` it also installs or updates the `Plugin Manager` (`PSP/APPS/PluginManager`).
 - `Adrenaline-ARK` users must update to `Adrenaline-8` (Isage's fork).
 
 For `PSP` users on `Official Firmware`:

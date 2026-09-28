@@ -124,11 +124,14 @@ vita: translations flash0
 	cd PSVita/build && cmake .. && make && cd ../../
 	cp PSVita/build/FasterARK.vpk dist/FasterARK_psvita.vpk
 
-updater: translations flash0
+updater: translations pluginmanager flash0
 #	Updater
 	mkdir -p dist/tmp/
 	cp -r Resources/LIBS Updater/Resources/
 	cp -r Resources/ARK_01234 Updater/Resources/
+#	the updater also installs the Plugin Manager app (PSP/APPS/PluginManager)
+	mkdir -p Updater/Resources/APPS
+	cp -r PluginManager/dist/PSP/APPS/PluginManager Updater/Resources/APPS/
 	cp $(FLASH0) Updater/Resources/ARK_01234/
 	cp Resources/DC10/DC10.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/FLASH150.ARK Updater/Resources/ARK_01234/
@@ -146,6 +149,7 @@ updater: translations flash0
 	rm -r dist/tmp/
 	rm -rf Updater/Resources/LIBS
 	rm -rf Updater/Resources/ARK_01234
+	rm -rf Updater/Resources/APPS
 
 clean:
 	rm -rf dist

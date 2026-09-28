@@ -21,6 +21,9 @@
 #define BUF_SIZE 16*1024
 #define RESTART_DELAY 10 // seconds
 
+// the Plugin Manager app's files are packed under this path
+#define PM_FOLDER "PSP/APPS/PluginManager/"
+
 enum {
     LITE_INSTALL,
     FULL_INSTALL,
@@ -513,6 +516,41 @@ void cleanupFiles(){
     }
 }
 
+int filter_plugin_manager(char* filename){
+    return strncmp(filename, PM_FOLDER, sizeof(PM_FOLDER)-1) != 0; // only the app's files
+}
+
+// Plugin Manager app: updated where it is (internal storage first, like XMBControl),
+// otherwise installed on the device of ARK's folder. Its data folder is left alone.
+void installPluginManager(){
+    static char* devices[] = { "ef0:/", "ms0:/" };
+    static char* dirs[] = { "PSP", "PSP/APPS", "PSP/APPS/PluginManager" };
+    char root[8];
+    char path[ARK_PATH_SIZE];
+    SceIoStat stat;
+
+    strcpy(root, (strncmp(ark_config.arkpath, "ef0:", 4) == 0)? "ef0:/" : "ms0:/");
+    for (int i=0; i<NELEMS(devices); i++){
+        strcpy(path, devices[i]);
+        strcat(path, PM_FOLDER "EBOOT.PBP");
+        if (sceIoGetstat(path, &stat) >= 0){
+            strcpy(root, devices[i]);
+            break;
+        }
+    }
+
+    for (int i=0; i<NELEMS(dirs); i++){
+        strcpy(path, root);
+        strcat(path, dirs[i]);
+        sceIoMkdir(path, 0777);
+    }
+
+    SceUID fd = sceIoOpen(eboot_path, PSP_O_RDONLY, 0777);
+    sceIoLseek32(fd, pbp_header.psar_offset, PSP_SEEK_SET);
+    extractArchive(fd, root, filter_plugin_manager);
+    sceIoClose(fd);
+}
+
 int updateARK(){
 
     static char* menuopts[] = {
@@ -585,6 +623,12 @@ int updateARK(){
 
     setInfoMsg(INFO_MSG, "Cleaning Files");
     cleanupFiles();
+
+    // last, so that a failure here can't leave ARK half updated
+    if (IS_PSP(ac)){
+        setInfoMsg(INFO_MSG, "Installing Plugin Manager...");
+        installPluginManager();
+    }
 
     setInfoMsg(INFO_MSG, "Update finished!");
     sceKernelDelayThread(2000000);

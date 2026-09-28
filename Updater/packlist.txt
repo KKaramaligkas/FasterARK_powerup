@@ -17,3 +17,7 @@ PS1SPU.PRX,Resources/ARK_01234/PS1SPU.PRX
 IDSREG.PRX,Resources/LIBS/idsregeneration.prx
 USBDEV.PRX,Resources/LIBS/usbdevice.prx
 IOP.PRX,Resources/LIBS/iop.prx
+# Plugin Manager app: installed to PSP/APPS/PluginManager, not to the ARK folder
+PSP/APPS/PluginManager/EBOOT.PBP,Resources/APPS/PluginManager/EBOOT.PBP
+PSP/APPS/PluginManager/cacert.pem,Resources/APPS/PluginManager/cacert.pem
+PSP/APPS/PluginManager/store.json,Resources/APPS/PluginManager/store.json
