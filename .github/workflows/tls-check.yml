@@ -1,0 +1,37 @@
+# Diagnostic only (not for main): captures the certificate chains GitHub serves
+# to the Plugin Manager and checks them with the app's mbedTLS version and CA bundle.
+name: TLS check
+on:
+  push:
+    branches:
+      - claude/cool-cray-pvgxu5
+permissions:
+  contents: read
+jobs:
+  tls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Server certificate chains
+        run: |
+          date -u
+          url=https://github.com/kkaramaligkas/fasterark_powerup/releases/latest/download/ARK_UPDATE.zip
+          curl -sSI "$url" | tr -d '\r' | grep -i -E '^(HTTP|location)' || true
+          asset=$(curl -sSI "$url" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}' | sed -E 's#^https://([^/]+)/.*#\1#')
+          echo "asset host: $asset"
+          echo "$asset" > asset_host
+          for h in raw.githubusercontent.com github.com $asset; do
+            echo "=================== $h"
+            openssl s_client -connect $h:443 -servername $h -showcerts </dev/null 2>/dev/null > chain.txt || true
+            grep -E '^ *[0-9]+ s:|^ +i:|^ +a:|^ +v:' chain.txt || true
+            awk '/BEGIN CERT/,/END CERT/' chain.txt
+          done
+      - name: mbedTLS 2.28.10 with the app's CA bundle
+        run: |
+          git clone -q --depth 1 --branch v2.28.10 https://github.com/Mbed-TLS/mbedtls /tmp/mbedtls
+          make -C /tmp/mbedtls -j4 lib > /dev/null
+          make -C /tmp/mbedtls/programs -j4 ssl/ssl_client2 > /dev/null
+          for h in raw.githubusercontent.com github.com $(cat asset_host); do
+            echo "=================== $h"
+            /tmp/mbedtls/programs/ssl/ssl_client2 server_name=$h server_port=443 ca_file=PluginManager/res/cacert.pem auth_mode=required request_page=/ 2>&1 | head -30 || true
+          done
