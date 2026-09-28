@@ -22,7 +22,8 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 # Install Instructions
 
 For `ARK` users (any device):
-- From ARK 5.1.6 on, the easiest way is the `Plugin Manager`: open `ARK-5` and choose `Update`.
+- From ARK 5.1.7 on, the easiest way is the `Plugin Manager`: open `ARK-5` and choose `Update`.
+- On a `PSP` with an older ARK, update once with `ARK_UPDATE.zip` (below): until 5.1.7 the `Plugin Manager` couldn't download anything on a real PSP.
 - The XMB's `System Update` and the Custom Launcher's update check are turned off in this build: they downloaded the original ARK-5, which would replace this one.
 - Otherwise, download `ARK_UPDATE.zip` and extract.
 - Copy `PSP` folder to `Memory Stick` (or `pspemu` folder on `PS Vita`)
