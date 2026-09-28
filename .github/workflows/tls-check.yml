@@ -16,22 +16,20 @@ jobs:
         run: |
           date -u
           url=https://github.com/kkaramaligkas/fasterark_powerup/releases/latest/download/ARK_UPDATE.zip
-          curl -sSI "$url" | tr -d '\r' | grep -i -E '^(HTTP|location)' || true
-          asset=$(curl -sSI "$url" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}' | sed -E 's#^https://([^/]+)/.*#\1#')
-          echo "asset host: $asset"
-          echo "$asset" > asset_host
-          for h in raw.githubusercontent.com github.com $asset; do
+          curl -sSIL "$url" | tr -d '\r' | grep -i -E '^(HTTP|location)' || true
+          curl -sSIL "$url" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}' | sed -E 's#^https://([^/]+)/.*#\1#' | sort -u > redirect_hosts
+          echo "redirect hosts:"; cat redirect_hosts
+          for h in $(cat redirect_hosts) objects.githubusercontent.com; do
             echo "=================== $h"
             openssl s_client -connect $h:443 -servername $h -showcerts </dev/null 2>/dev/null > chain.txt || true
             grep -E '^ *[0-9]+ s:|^ +i:|^ +a:|^ +v:' chain.txt || true
-            awk '/BEGIN CERT/,/END CERT/' chain.txt
           done
       - name: mbedTLS 2.28.10 with the app's CA bundle
         run: |
-          git clone -q --depth 1 --branch v2.28.10 https://github.com/Mbed-TLS/mbedtls /tmp/mbedtls
+          git clone -q --depth 1 --branch v2.28.10 https://github.com/Mbed-TLS/mbedtls /tmp/mbedtls 2>/dev/null
           make -C /tmp/mbedtls -j4 lib > /dev/null
           make -C /tmp/mbedtls/programs -j4 ssl/ssl_client2 > /dev/null
-          for h in raw.githubusercontent.com github.com $(cat asset_host); do
+          for h in $(cat redirect_hosts) objects.githubusercontent.com; do
             echo "=================== $h"
-            /tmp/mbedtls/programs/ssl/ssl_client2 server_name=$h server_port=443 ca_file=PluginManager/res/cacert.pem auth_mode=required request_page=/ 2>&1 | head -30 || true
+            /tmp/mbedtls/programs/ssl/ssl_client2 server_name=$h server_port=443 ca_file=PluginManager/res/cacert.pem auth_mode=required request_page=/ 2>&1 | grep -E 'Verifying|issuer name|subject name|issued  on|expires on|failed|!' || true
           done
