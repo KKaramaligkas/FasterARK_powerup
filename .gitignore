@@ -5,3 +5,17 @@ __pycache__/
 /Updater/Resources/APPS/
 /Updater/Resources/ARK_01234/
 /Updater/Resources/LIBS/
+# built by "make"
+/PSP/*.o
+/PSP/*.elf
+/PSP/*.prx
+/PSP/EBOOT.PBP
+/PSP/PARAM.SFO
+/Updater/*.o
+/Updater/*.elf
+/Updater/*.prx
+/Updater/EBOOT.PBP
+/Resources/Peops/**/*.o
+/Resources/Peops/*.elf
+/Resources/Peops/*.prx
+/Resources/Language/Translations/LANG.ARK

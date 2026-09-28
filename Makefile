@@ -1,4 +1,4 @@
-.PHONY: psp vita updater translations pluginmanager flash0
+.PHONY: psp vita updater translations pluginmanager flash0 version
 
 PY = $(shell which python3)
 PSPDEV = $(shell psp-config --pspdev-path)
@@ -7,6 +7,7 @@ CHOVYSIGNDIR = ./Resources/Chovy-Sign
 CHOVYSIGN = $(CHOVYSIGNDIR)/ChovySign-CLI
 LANGFOLDER = Resources/Language/Translations/resources
 FLASH0 = build/FLASH0.ARK
+VERSION_TXT = build/VERSION.TXT
 
 all: translations themes pluginmanager flash0 psp vita updater
 	echo "All Done!"
@@ -18,13 +19,25 @@ pluginmanager:
 	mkdir -p dist
 	cp PluginManager/dist/PluginManager.zip dist/
 
-# ARK's FLASH0.ARK with XMBControl built from XMBControl/ (Plugin Manager
-# entry under Custom Launcher and the XMB "Plugins" category)
+# ARK's FLASH0.ARK with two modules built here: XMBControl from XMBControl/
+# (Plugin Manager entry under Custom Launcher and the XMB "Plugins" category)
+# and VSHControl from VSHControl/ (upstream fixes newer than the binaries)
 flash0:
 	make -C XMBControl
+	make -C VSHControl
 	mkdir -p build
 	$(PY) $(BUILDTOOLS)/gz/pspgz.py build/ark_xmbctrl.prx $(BUILDTOOLS)/gz/UserModule.hdr XMBControl/xmbctrl.prx XmbControl 0x0000
-	$(PY) tools/flash0.py replace Resources/ARK_01234/FLASH0.ARK $(FLASH0) /kd/ark_xmbctrl.prx=build/ark_xmbctrl.prx
+	$(PY) $(BUILDTOOLS)/gz/pspgz.py build/ark_vshctrl.prx $(BUILDTOOLS)/gz/SystemControl.hdr VSHControl/vshctrl.prx VshControl 0x3007
+	$(PY) tools/flash0.py replace Resources/ARK_01234/FLASH0.ARK $(FLASH0) \
+		/kd/ark_xmbctrl.prx=build/ark_xmbctrl.prx /kd/ark_vshctrl.prx=build/ark_vshctrl.prx
+
+# ARK_01234/VERSION.TXT: the release version (Updater/version.h), which the
+# Plugin Manager compares with its store to offer ARK updates
+version:
+	mkdir -p build
+	awk '/define ARK_MAJOR_VERSION/ {a=$$3} /define ARK_MINOR_VERSION/ {b=$$3} /define ARK_MICRO_VERSION/ {c=$$3} \
+		END {if (a == "" || b == "" || c == "") exit 1; printf "%s.%s.%s\r\n", a, b, c}' Updater/version.h > $(VERSION_TXT)
+	$(PY) tools/check_store_version.py $(VERSION_TXT) PluginManager/store/store.json
 
 translations:
 	$(PY) $(BUILDTOOLS)/pftools/bdf_to_pf.py $(LANGFOLDER)/satelite_chs_utf8.txt Resources/Language/quan.bdf $(LANGFOLDER)/satelite_chs.txt $(LANGFOLDER)/CHS.pf
@@ -39,13 +52,14 @@ themes:
 	cd dist/tmp/ && zip -m -r themes.zip * && cd ../../ && mv dist/tmp/themes.zip dist/
 	rm -rf dist/tmp
 
-psp: translations pluginmanager flash0
+psp: translations pluginmanager flash0 version
 	make -C PSP
 #	PSP Lite Install
 	mkdir -p dist/tmp/PSP/GAME/FasterARK/
 	mkdir -p dist/tmp/PSP/SAVEDATA/
 	cp -r Resources/ARK_01234 dist/tmp/PSP/SAVEDATA/
 	cp $(FLASH0) dist/tmp/PSP/SAVEDATA/ARK_01234/
+	cp $(VERSION_TXT) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r Resources/CustomIPL dist/tmp/PSP/GAME/
 	cp PSP/EBOOT.PBP dist/tmp/PSP/GAME/FasterARK/
 	cp Resources/LIBS/ipl_update.prx dist/tmp/PSP/GAME/CustomIPL/
@@ -60,6 +74,7 @@ psp: translations pluginmanager flash0
 	mkdir -p dist/tmp/PSP/APPS/
 	cp -r Resources/ARK_01234 dist/tmp/PSP/SAVEDATA/
 	cp $(FLASH0) dist/tmp/PSP/SAVEDATA/ARK_01234/
+	cp $(VERSION_TXT) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp Resources/Extras/* dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r PluginManager/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
 	cp Resources/Language/Translations/LANG.ARK dist/tmp/PSP/SAVEDATA/ARK_01234/
@@ -87,7 +102,7 @@ psp: translations pluginmanager flash0
 	cd dist/tmp/ && zip -m -r FasterARK_psp_full.zip * && cd ../../ && mv dist/tmp/FasterARK_psp_full.zip dist/
 	rm -r dist/tmp/
 
-vita: translations flash0
+vita: translations flash0 version
 	mkdir -p dist
 	mkdir -p PSVita/res/save
 	mkdir -p PSVita/loader/psp/eboot/iso_files/psp_game/sysdir
@@ -96,6 +111,7 @@ vita: translations flash0
 	mkdir -p PSVita/res/psx/
 	cp -r Resources/ARK_01234 PSVita/res/save/
 	cp $(FLASH0) PSVita/res/save/ARK_01234/
+	cp $(VERSION_TXT) PSVita/res/save/ARK_01234/
 	cp -r Resources/Extras/* PSVita/res/save/ARK_01234/
 	cp -r Resources/PSVita/* PSVita/res/save/ARK_01234/
 	cp Resources/Language/Translations/LANG.ARK PSVita/res/save/ARK_01234/
@@ -124,7 +140,7 @@ vita: translations flash0
 	cd PSVita/build && cmake .. && make && cd ../../
 	cp PSVita/build/FasterARK.vpk dist/FasterARK_psvita.vpk
 
-updater: translations pluginmanager flash0
+updater: translations pluginmanager flash0 version
 #	Updater
 	mkdir -p dist/tmp/
 	cp -r Resources/LIBS Updater/Resources/
@@ -133,6 +149,7 @@ updater: translations pluginmanager flash0
 	mkdir -p Updater/Resources/APPS
 	cp -r PluginManager/dist/PSP/APPS/PluginManager Updater/Resources/APPS/
 	cp $(FLASH0) Updater/Resources/ARK_01234/
+	cp $(VERSION_TXT) Updater/Resources/ARK_01234/
 	cp Resources/DC10/DC10.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/FLASH150.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/LANG150.ARK Updater/Resources/ARK_01234/
@@ -169,6 +186,7 @@ clean:
 	make -C PluginManager clean
 	rm -rf PluginManager/dist
 	make -C XMBControl clean
+	make -C VSHControl clean
 	make -C Updater clean
 	make -C Resources/Peops clean
 	make -C PSVita/loader/psp/eboot clean
