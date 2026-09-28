@@ -13,7 +13,7 @@
 
     A certificate that fails the check is explained in the error (tlsdiag.c),
     and the details go to a report file, with the PSP's clock as read by the
-    check and by the RTC.
+    check and by the kernel. The check's clock comes from the RTC (clock.c).
 */
 
 #include <stdio.h>
@@ -27,8 +27,8 @@
 #include <pspnet_resolver.h>
 #include <psprtc.h>
 #include <psputility.h>
+#include <psputils.h>
 #include <pspwlan.h>
-#include <sys/time.h>
 #include <time.h>
 
 #include <curl/curl.h>
@@ -334,14 +334,18 @@ static void write_report(const char *url, const tlsdiag *d)
     char *buf = malloc(4096);
     if (!buf) return;
 
-    struct timeval tv;
-    memset(&tv, 0, sizeof(tv));
-    int g = gettimeofday(&tv, NULL);
     time_t now = time(NULL);
     struct tm tm;
-    char utc[32] = "unreadable", rtc_utc[40] = "?", rtc_local[40] = "?";
+    char utc[32] = "unreadable", kernel[32] = "?", rtc_utc[40] = "?", rtc_local[40] = "?";
     if (now != (time_t)-1 && gmtime_r(&now, &tm))
         strftime(utc, sizeof(utc), "%Y-%m-%d %H:%M:%S", &tm);
+    /* what the SDK's time() would have said */
+    SceKernelTimeval ktv;
+    memset(&ktv, 0, sizeof(ktv));
+    int kr = sceKernelLibcGettimeofday(&ktv, NULL);
+    time_t kt = (time_t)ktv.tv_sec;
+    if (kr >= 0 && gmtime_r(&kt, &tm))
+        strftime(kernel, sizeof(kernel), "%Y-%m-%d %H:%M:%S", &tm);
     ScePspDateTime dt;
     int r1 = sceRtcGetCurrentClock(&dt, 0);
     if (r1 >= 0) rtc_text(&dt, rtc_utc, sizeof(rtc_utc));
@@ -354,12 +358,13 @@ static void write_report(const char *url, const tlsdiag *d)
     int len = snprintf(buf, 4096,
                        "Plugin Manager %s: a certificate check failed\n"
                        "URL: %s\n"
-                       "Clock used by the check: %lld = %s UTC (gettimeofday: %d)\n"
+                       "Clock used by the check: %lld = %s UTC\n"
+                       "Kernel libc clock (not used): %u = %s (%d)\n"
                        "RTC: %s UTC (%d), %s local (%d)\n"
                        "Time zone: %+d minutes, daylight saving: %d\n"
                        "Trusted authorities: %d loaded from %s (parse result %d)\n\n",
-                       PM_VERSION, url ? url : "?", (long long)now, utc, g, rtc_utc, r1, rtc_local, r2, tz, dst,
-                       ca_count, ca_path, ca_parse_result);
+                       PM_VERSION, url ? url : "?", (long long)now, utc, (unsigned)ktv.tv_sec, kernel, kr,
+                       rtc_utc, r1, rtc_local, r2, tz, dst, ca_count, ca_path, ca_parse_result);
     if (len > 0 && len < 4096) len += tlsdiag_report(d, buf + len, 4096 - len);
     if (len > 0) fs_write_all(report_path, buf, len < 4096 ? len : 4095);
     free(buf);
