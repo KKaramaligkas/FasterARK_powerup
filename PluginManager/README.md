@@ -294,6 +294,11 @@ A complete entry:
    result, as well as updates and uninstalls.
 4. Increase `storeInfo.revision`.
 
+Packages whose author publishes no usable download are built from source into
+`store/packages/` and served from this repository. For now that's
+UmdImageCreator: `tools/build_umdimagecreator.sh` builds it from the author's
+tag, with the source unchanged.
+
 ## Building
 
 You need the [pspdev](https://github.com/pspdev/pspdev) toolchain and these
@@ -360,7 +365,7 @@ What has been checked:
   - installs of rar, tar.gz and zip packages, including a 36 MB, 579-file
     emulator, identical file by file to the reference install;
   - the XMB launch request.
-- On the PC: the test suite, with the eighteen entries of the default store,
+- On the PC: the test suite, with the nineteen entries of the default store,
   and the ARK updater's install steps.
 - On a PSP, with ARK 5.1.6: the XMB with the newer VSHControl and XMBControl,
   starting the app from the XMB, the Wi-Fi connection, and the store over
