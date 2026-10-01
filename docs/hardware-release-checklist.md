@@ -72,3 +72,20 @@ The transaction code has host tests for staging, failed writes, cancellation,
 and restart recovery, and a GitHub Actions package build. **No hardware result
 for these new changes has been recorded.** Add results and evidence here before
 describing a release candidate as hardware-tested.
+
+## ARK Browser validation (not yet tested on hardware)
+
+Record the exact build, model, firmware, storage device, access point, and page URLs.
+
+- [ ] Launch standalone `ARKBrowser.zip` from Game; confirm the CA bundle loads.
+- [ ] On PSP-1000, open a text page over verified TLS 1.2 without running out of memory.
+- [ ] Open a plain HTTP page; check the unencrypted indicator.
+- [ ] Reject expired/untrusted/wrong-host certificates; check clock-error guidance.
+- [ ] Reject a server restricted to TLS 1.0/1.1 and an HTTPS-to-HTTP redirect.
+- [ ] Enter an address, follow relative links after a redirect, browse the link list, and go back.
+- [ ] Cancel a page load; retain the current page and usable controls.
+- [ ] Download a file, cancel and retry it, verify the resulting bytes, and preserve an existing download.
+- [ ] Check shortened-page / omitted-link notices, and binary file guidance.
+- [ ] Confirm PSP Go on both storage devices; check Vita/Adrenaline separately.
+- [ ] Check HOME exit during a request, after a request, and while using the keyboard.
+- [ ] Capture screenshots of the start page, HTTPS page, link list, and download progress.

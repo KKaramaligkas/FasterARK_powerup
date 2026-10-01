@@ -1,6 +1,6 @@
 # FasterARK powerup
 
-ARK-5 with a Wi-Fi Plugin Manager, an optional XMB Plugins category, and PSP and Vita installation packages.
+ARK-5 with a Wi-Fi Plugin Manager, a lightweight HTTPS browser, an optional XMB Plugins category, and PSP and Vita installation packages.
 
 Start with the [package comparison and installation guide](docs/quick-start.md). For troubleshooting, see the [Plugin Manager guide](PluginManager/README.md).
 
@@ -14,6 +14,7 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `LEDA Plugin`: allows running `1.50 homebrew` on any firmware and psp or vita model.
 - `ARK-150 Addon`: Only usable on 1K, installs the full 1.50 ARK firmware on memory stick to dual boot with latest firmware (installation and usage: https://github.com/PSP-Arkfive/ARK-150).
 - `Plugin Manager`: download, install, update and remove plugins and homebrew over Wi-Fi, like the 3DS's Universal Updater. Also available on its own as `PluginManager.zip`.
+- `ARK Browser`: a text browser with direct HTTPS using TLS 1.2, links, back navigation, and downloads. Also available as `ARKBrowser.zip`; launch it from the Game column. [Installation and limits](Browser/README.md).
 
 # Plugin Manager
 - It comes with the `Full` variant, and on a `PSP` the updater (`ARK_UPDATE.zip`) installs or updates it too, keeping its settings and list of installed plugins.

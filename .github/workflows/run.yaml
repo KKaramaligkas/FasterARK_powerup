@@ -23,11 +23,15 @@ jobs:
       - name: Host test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev
+          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev openssl
       - name: Sanitized core and recovery tests
         env:
           UBSAN_OPTIONS: halt_on_error=1
         run: make -C PluginManager/tests check
+      - name: Sanitized browser and TLS policy tests
+        env:
+          UBSAN_OPTIONS: halt_on_error=1
+        run: make -C Browser/tests check
       - name: Validate toolchain lock
         run: |
           python3 tools/ci_toolchains.py check
