@@ -23,7 +23,7 @@ jobs:
       - name: Host test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev
+          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev
       - name: Sanitized core and recovery tests
         env:
           UBSAN_OPTIONS: halt_on_error=1
