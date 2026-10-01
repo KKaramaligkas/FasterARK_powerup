@@ -1,3 +1,9 @@
+# FasterARK powerup
+
+ARK-5 with a Wi-Fi Plugin Manager, an optional XMB Plugins category, and PSP and Vita installation packages.
+
+Start with the [package comparison and installation guide](docs/quick-start.md). For troubleshooting, see the [Plugin Manager guide](PluginManager/README.md).
+
 # Variants
 The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `DC10`: ultimate recovery tool for PSP (installation and usage: https://github.com/PSP-Arkfive/Despertar-Del-Cementerio).
@@ -11,7 +17,7 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 
 # Plugin Manager
 - It comes with the `Full` variant, and on a `PSP` the updater (`ARK_UPDATE.zip`) installs or updates it too, keeping its settings and list of installed plugins.
-- It also updates ARK itself: open `ARK-5` in the app and choose `Update`. It downloads the updater from the latest release and starts it (from ARK 5.1.6).
+- It also updates ARK itself: open `ARK-5` in the app and choose `Update`. It downloads the updater for the version shown in the store and starts it (from ARK 5.1.6).
 - In the `XMB` it's `★ Plugin Manager`, right under `★ Custom Launcher`, and it's listed in the `Custom Launcher` too.
 - Installed plugins can also be listed in the `XMB`, in a `Plugins` category that takes the place of the defunct `PlayStation Network` column. It's off by default: turn it on in the app's `Settings`.
 - If the `XMB` ever fails to start with the category on, hold `START` while the `XMB` loads, then turn the category off in the app.
@@ -50,3 +56,4 @@ For new `PS Vita` users:
 - `Install` using VitaShell.
 - Run `FasterARK` and choose first option.
 - You can also use `Adrenaline-8` to boot into `ARK-5`. 
+

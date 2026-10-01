@@ -30,8 +30,8 @@ FasterARK and is listed in three places:
 
 ARK itself is in the store as **ARK-5**, from ARK 5.1.6. The app compares the
 store's version with `VERSION.TXT` in ARK's folder, which the release packages
-and the updater write. **Update** downloads `ARK_UPDATE.zip` from the latest
-release, puts the ARK Updater in `PSP/GAME/UPDATE` and offers to start it. The
+and the updater write. **Update** downloads `ARK_UPDATE.zip` from the release
+shown in the store, puts the ARK Updater in `PSP/GAME/UPDATE` and offers to start it. The
 updater updates ARK and this app, then restarts. It can also be started later
 from the Game column, like any other homebrew.
 
@@ -209,9 +209,35 @@ Entries with errors are skipped, and the rest of the store still loads.
 Steps run in order. The first one that fails stops the install. On an update,
 a failure leaves the previous version in place.
 
+Files are extracted or copied into staging files before installed files change.
+Commit includes removed files, `PLUGINS.TXT`, and `data/installed.json`.
+If a write fails or the operation is cancelled, the originals are restored.
+An interrupted commit is recovered on the next launch, before the database is
+loaded. Keep `data/tmp/transaction/` intact until recovery finishes. If storage
+is disconnected or recovery cannot finish, reconnect it and restart the app;
+the app refuses further changes while recovery is incomplete.
+
+Staging and backups require extra free space. This recovery applies to the
+Plugin Manager's file installation, not the firmware writes performed later by
+the separate ARK Updater. Real-device power interruption testing is still
+required; filesystem or storage corruption can prevent automatic recovery.
+
+The details page shows free space on the installation device. Downloads check
+the server's reported remaining size before writing; extraction and copying
+check space for the replacement, the backup, and pending destination growth,
+including installations to a different PSP Go device. Unknown free-space values
+are shown as unknown; failed writes still trigger rollback.
+
+Interrupted downloads keep `*.part` and `*.part.json` in the scratch folder.
+Retrying the same package resumes when the server supplies a strong ETag or
+Last-Modified validator and returns the matching byte range. Changed files,
+ignored ranges, or invalid metadata restart the download. Package checksums
+are verified after completion. Downloads without a usable validator restart
+from the beginning. These partial files can be removed to reclaim space.
+
 | `type` | Fields |
 | --- | --- |
-| `download` | `url`; `file`: name for the download (default: end of the URL); `sha256`: recommended, and required for `http://` URLs |
+| `download` | `url`; `file`: name for the download (default: end of the URL); `sha256`: recommended, and required for `http://` URLs; alternatively `sha256Url` and `checksumFile`: HTTPS release SHA256SUMS file and the asset name in it |
 | `extract` | `file` (default: the last download); `output`: destination folder; `input`: folder inside the archive to take files from; `include` / `exclude`: patterns; `flatten`: drop the archive's folders; `keep`: patterns of files that are not overwritten if they already exist (user settings) |
 | `copy` | `file`; `to`: a folder ending with `/` or a file path |
 | `mkdir` | `path` |
@@ -299,6 +325,19 @@ Packages whose author publishes no usable download are built from source into
 UmdImageCreator: `tools/build_umdimagecreator.sh` builds it from the author's
 tag, with the source unchanged.
 
+Official entries use fixed release URLs, commit URLs, or GitHub asset IDs and
+verify checksums. The NZPortable entry is a named nightly snapshot; a later
+nightly is a separate store update. `tools/check_store_downloads.py` rejects
+moving or unchecked downloads in CI.
+
+For a new ARK release, change `Updater/version.h` and, when applicable,
+`src/version.h`, then run `python3 tools/release_store.py --seed` from the repo
+root and commit the refreshed seed with its revision bump. The seed references
+that exact release's `SHA256SUMS`, avoiding the impossible cycle of embedding an
+archive's own hash inside it. The build also prepares this seed before packaging.
+After packaging, CI publishes `store.json` with the actual archive hashes along
+with `SHA256SUMS`; users can select that release store as their store URL.
+
 ## Building
 
 You need the [pspdev](https://github.com/pspdev/pspdev) toolchain and these
@@ -325,8 +364,20 @@ and on the PSP the socket functions would call the wrong system functions.
 
 ## Testing
 
+Pull requests run the sanitized host tests before building release packages.
+Publishing also depends on those tests. SDK archives, SDK source revisions,
+Vita library archives, and build actions are pinned; `tools/toolchains.json`
+records the SDK inputs and their SHA-256 checksums. A changed upstream asset
+fails verification rather than silently changing the build.
+
+PSP libraries installed by `psp-pacman` still come from its current repository;
+`psp-packages.txt` in each release records their exact installed versions.
+`toolchains.json`, compiler versions, the source commit, and `SHA256SUMS` are
+published with the release to make its build inputs and outputs inspectable.
+
 - `make -C PluginManager/tests check`: unit tests (store parsing, paths,
-  `PLUGINS.TXT` editing, database, installer rules), built with
+  `PLUGINS.TXT` editing, database, installer rules, cancellation, failed writes
+  and recovery after an interrupted commit), built with
   AddressSanitizer and UBSan.
 - `make -C PluginManager/tests install PKG_DIR=…`: installs, updates and
   uninstalls every store entry from local copies of the archives.
@@ -376,7 +427,55 @@ What still needs a real PSP:
 - Starting the ARK Updater from the app.
 - The Plugins category in the XMB.
 
+Use the [hardware release checklist](../docs/hardware-release-checklist.md) to
+record model, firmware, candidate checksum, and individual results, including
+transaction recovery. The host tests and build do not establish hardware
+coverage for the new changes.
+
 ## License
 
 GPL-3.0, like ARK. Built with libcurl, mbedTLS, cJSON, unarr, zlib, libpng
 and intraFont. The CA bundle is Mozilla's, from certifi.
+
+## Compatibility and replacement review
+
+The details page shows supported models and PSP system software when the store
+provides them. Missing dependencies and installed conflicts appear there too.
+Installation checks these requirements before downloading or changing files.
+Entries without compatibility metadata make no model or firmware guarantee.
+
+Optional entry fields:
+
+```json
+"compatibility": {"models": ["1000", "2000", "3000", "go", "street", "vita"], "firmware": ["6.60", "6.61"]},
+"requires": ["required-package-id"],
+"conflicts": ["incompatible-package-id"]
+```
+
+`models` and `firmware` are nonempty allowlists. Both constraints must match.
+Firmware means PSP system software, including the emulated version on Vita; it
+does not mean Vita firmware or ARK's release version. Package lists refer to
+Plugin Manager's installed database; manually installed plugins are not tracked
+as dependencies. Unknown constraint fields and malformed lists block installation
+with an explanation. `requires` and `conflicts` cannot reference the entry itself.
+The official UmdImageCreator entry excludes PSP Go and Vita, which have no UMD drive.
+
+After downloading and staging an install, **Review file changes** lists each
+existing file that will be replaced or removed, with its recorded package owner.
+Up/Down browses the complete list; confirm applies all changes; cancel keeps the
+existing files and database. An untracked file is labelled **not tracked**.
+When a replacement belongs to another package, accepting transfers that file's
+ownership to the new package, so uninstalling the previous owner cannot delete it.
+New files do not need a replacement prompt. The review also includes changes to
+`PLUGINS.TXT`; files preserved by an archive's `keep` rule are left out.
+
+## Validation for these changes
+
+Host tests cover compatibility rejection before staging, dependency/conflict
+checks, cancelling and accepting replacements owned by another package,
+transaction recovery, space exhaustion, and HTTP resume behavior. CI builds PSP
+and Vita packages and retains release checksums and toolchain provenance.
+Physical-device testing is tracked separately in the
+[hardware checklist](../docs/hardware-release-checklist.md); a passing build is
+not a hardware result. Screenshots of the new review and compatibility pages
+should be captured with the tested release during that checklist.

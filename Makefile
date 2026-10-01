@@ -15,6 +15,7 @@ all: translations themes pluginmanager flash0 psp vita updater
 # Plugin Manager app (PSP/APPS/PluginManager), also released on its own for
 # the store's self-update and for installs without the Full variant
 pluginmanager:
+	$(PY) tools/release_store.py --seed
 	make -C PluginManager package
 	mkdir -p dist
 	cp PluginManager/dist/PluginManager.zip dist/

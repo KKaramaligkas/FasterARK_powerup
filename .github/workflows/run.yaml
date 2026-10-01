@@ -9,29 +9,60 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PSPDEV: /usr/local/pspdev
 jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Host test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev
+      - name: Sanitized core and recovery tests
+        env:
+          UBSAN_OPTIONS: halt_on_error=1
+        run: make -C PluginManager/tests check
+      - name: Validate toolchain lock
+        run: |
+          python3 tools/ci_toolchains.py check
+          python3 -m unittest discover -s tools/tests
+          python3 tools/check_store_downloads.py PluginManager/store/store.json
   build:
-    runs-on: ubuntu-latest
+    needs: test
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+      - name: Locked toolchain settings
+        run: python3 tools/ci_toolchains.py env >> "$GITHUB_ENV"
       - name: Dependencies
         run: |
-          sudo apt-get install git openssh-client clang automake autoconf zlib1g-dev python3 python3-pycryptodome python3-ecdsa p7zip-full curl unzip sudo mkisofs
+          sudo apt-get update
+          sudo apt-get install -y git openssh-client clang automake autoconf zlib1g-dev python3 python3-pycryptodome python3-ecdsa p7zip-full curl unzip sudo mkisofs
 
-      - name: Getting lastest pspdev
+      - name: Install locked pspdev
         run: | 
-          curl -OJL 'https://github.com/pspdev/pspdev/releases/latest/download/pspdev-ubuntu-latest-x86_64.tar.gz'
-          sudo tar xvf pspdev-ubuntu-latest-x86_64.tar.gz -C /usr/local/
+          python3 tools/ci_toolchains.py download pspdev pspdev.tar.gz
+          sudo tar xf pspdev.tar.gz -C /usr/local/
           echo $PSPDEV/bin >> $GITHUB_PATH
           echo PATH="$PATH:$PSPDEV/bin"
 
-      - name: Cloning and Building lastest pspsdk
+      - name: Fetch locked pspsdk
         run: | 
-          git clone https://github.com/pspdev/pspsdk
+          git init pspsdk
+          git -C pspsdk remote add origin https://github.com/pspdev/pspsdk
+          git -C pspsdk fetch --depth 1 origin "$PSPSDK_REF"
+          git -C pspsdk checkout --detach FETCH_HEAD
 
       - name: Bootstrap sdk and build
         working-directory: pspsdk
@@ -43,22 +74,17 @@ jobs:
 
       - name: ya2d via psp-pacman
         run: |
-          psp-pacman -Syyu --noconfirm
+          psp-pacman -Syy --noconfirm
           psp-pacman -S ya2d --noconfirm
 
       - name: Plugin Manager libraries via psp-pacman
         run: psp-pacman -S --needed curl mbedtls cjson unarr libintrafont libpng zlib bzip2 liblzma --noconfirm
 
       - name: Update psp-cfw-sdk
-        run: curl -OJL "https://github.com/pspdev/psp-cfw-sdk/releases/download/latest/psp-cfw-sdk.zip"
+        run: python3 tools/ci_toolchains.py download psp_cfw_sdk psp-cfw-sdk.zip
       
       - name: Extract psp-cfw-sdk
         run: sudo unzip -o psp-cfw-sdk.zip -d /
-
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
 
       - name: ARK version
         id: version
@@ -71,7 +97,10 @@ jobs:
 
       - name: Clone VitaSDK
         run: |
-         git clone https://github.com/vitasdk/vdpm
+         git init vdpm
+         git -C vdpm remote add origin https://github.com/vitasdk/vdpm
+         git -C vdpm fetch --depth 1 origin "$VDPM_REF"
+         git -C vdpm checkout --detach FETCH_HEAD
 
       - name: Bootstrap VitaSDK
         working-directory: vdpm
@@ -81,25 +110,40 @@ jobs:
           export VITASDK=/usr/local/vitasdk
           export PATH=$VITASDK/bin:$PATH
           ./bootstrap-vitasdk.sh
-          # install-all.sh goes through vdpm's repo-root script, which still looks for
-          # pacman in $VITASDK/bin; use the SDK's own vdpm and only what PSVita links
-          VDPM_NONINTERACTIVE=1 vdpm install zlib libpng libjpeg-turbo libvita2d taihen
+      - name: Locked Vita libraries
+        run: |
+          for package in zlib libpng libjpeg_turbo libvita2d taihen; do
+            python3 tools/ci_toolchains.py download "vita_$package" "vita-$package.tar.xz"
+            sudo python3 tools/ci_toolchains.py vita-library "vita-$package.tar.xz" "$VITASDK"
+          done
 
       - name:  mkpsxiso
         run: |
-          curl -OJL 'https://github.com/Lameguy64/mkpsxiso/releases/download/v2.20/mkpsxiso-2.20-Linux.deb'
+          python3 tools/ci_toolchains.py download mkpsxiso mkpsxiso-2.20-Linux.deb
           sudo apt-get install ./mkpsxiso-2.20-Linux.deb
 
       - name: Build
         run:  make clean && make 
 
+      - name: Build provenance
+        run: |
+          mkdir -p dist
+          cp tools/toolchains.json dist/toolchains.json
+          psp-pacman -Q > dist/psp-packages.txt
+          psp-gcc --version > dist/compiler-versions.txt
+          arm-vita-eabi-gcc --version >> dist/compiler-versions.txt
+          git rev-parse HEAD > dist/source-commit.txt
+          sha256sum dist/*.zip dist/*.vpk > dist/SHA256SUMS
+          python3 tools/release_store.py --artifacts dist --output dist/store.json
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: FasterARK-release
           path: dist/*
   release:
-    needs: build
+    needs: [test, build]
+    permissions:
+      contents: write
     # other branches and pull requests only build; releasing takes a push to main or an explicit ARK-* tag
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/ARK-')
     runs-on: ubuntu-latest
@@ -126,13 +170,13 @@ jobs:
           echo "name=${tag/-/ }" >> "$GITHUB_OUTPUT"
       - name: Download artifacts
         if: steps.meta.outputs.publish == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: FasterARK-release
-          path: dist/*.zip
+          path: dist
       - name:
         if: steps.meta.outputs.publish == 'true'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: ${{ steps.meta.outputs.name }}
@@ -142,5 +186,11 @@ jobs:
           files: |
             **/*.zip
             **/*.vpk
+            dist/SHA256SUMS
+            dist/toolchains.json
+            dist/psp-packages.txt
+            dist/compiler-versions.txt
+            dist/source-commit.txt
+            dist/store.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

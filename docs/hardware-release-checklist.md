@@ -1,0 +1,74 @@
+# Hardware release checks
+
+Record results for the exact candidate commit and package checksum. A passing
+emulator or host test does not count as a hardware result. Leave unavailable
+devices and firmware combinations **Not tested**.
+
+## Candidate
+
+| Field | Value |
+| --- | --- |
+| Commit | Not tested |
+| ARK / Plugin Manager version | Not tested |
+| Package / SHA-256 | Not tested |
+| Tester / date | Not tested |
+| Device model / motherboard | Not tested |
+| Firmware (6.60, 6.61, TT, DT, or Vita environment) | Not tested |
+| Storage device / capacity / free space | Not tested |
+| Network / access point / PSP clock | Not tested |
+
+## Device coverage
+
+Keep one completed copy of this checklist per combination actually tested.
+For PSP Go, check both `ms0:` and `ef0:`, including the app running from one
+device and installing to the other. PSP Street has no Wi-Fi: test the offline
+store, installed-plugin controls, and manual package update route.
+
+| Device | Required coverage | Result |
+| --- | --- | --- |
+| PSP-1000 | 32 MB memory; supported firmware used by the tester | Not tested |
+| PSP-2000 | Installation, Wi-Fi, update, XMB integration | Not tested |
+| PSP-3000 | Installation, Wi-Fi, update, XMB integration | Not tested |
+| PSP Go | Internal storage, memory stick, and cross-device installation | Not tested |
+| PSP Street | Offline use and manual update | Not tested |
+| PS Vita | Actual ARK/Adrenaline environment; verify supported features individually | Not tested |
+
+## Checks
+
+| Check | Expected result | Result / evidence |
+| --- | --- | --- |
+| Start from XMB and Custom Launcher | App opens; controls and installed list work | Not tested |
+| First connection and remembered Wi-Fi | Correct network selected; Circle can open network selection | Not tested |
+| WLAN switch off and reconnect | Clear status; no freeze or crash | Not tested |
+| HTTPS with a correct RTC date | Store, icons, and a package download with certificate checks on | Not tested |
+| Incorrect date / refused certificate | Explanation appears; no package is installed | Not tested |
+| Large download on PSP-1000 | Completes without exhausting network memory | Not tested |
+| Install, update, disable, and uninstall a plugin | Correct files and PLUGINS.TXT lines; unrelated lines survive | Not tested |
+| Cancel while downloading or extracting | Installed files and database retain their previous versions | Not tested |
+| Cancel while committing package files | Original files, configuration, and database restored | Not tested |
+| Insufficient storage | Useful error; prior installation remains usable | Not tested |
+| Restart after an interrupted package commit | Recovery completes before the installed list is loaded | Not tested |
+| Storage absent during recovery | Further changes refused; reconnecting permits recovery | Not tested |
+| ARK update from Plugin Manager | Correct candidate downloaded; updater starts and completes | Not tested |
+| XMB Plugins category enabled | Correct items and names; selecting a plugin opens its details | Not tested |
+| XMB Plugins category disabled | Original column returns | Not tested |
+| START recovery route | XMB starts without the category/plugins; option can be disabled | Not tested |
+| Existing user configuration | Package keep rules and disabled-plugin state survive updates | Not tested |
+
+Use disposable package files and backed-up storage when testing interruptions.
+Interrupt only the Plugin Manager's package-file commit. Do not interrupt the
+separate ARK Updater while it is writing firmware or IPL; this journal does not
+cover those writes.
+
+## Current evidence
+
+The pre-change README records PSP testing on ARK 5.1.6 for the XMB modules,
+launching the app, Wi-Fi, and HTTPS with the RTC clock fix. It does not establish
+coverage for the new transaction code or every device/firmware combination.
+Starting the ARK Updater from the app and the XMB Plugins category were still
+listed as needing hardware testing.
+
+The transaction code has host tests for staging, failed writes, cancellation,
+and restart recovery, and a GitHub Actions package build. **No hardware result
+for these new changes has been recorded.** Add results and evidence here before
+describing a release candidate as hardware-tested.

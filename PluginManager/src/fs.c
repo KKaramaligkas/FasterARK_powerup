@@ -70,6 +70,21 @@ int64_t fs_size(const char *path)
     return st.st_size;
 }
 
+int64_t fs_free_bytes(const char *path)
+{
+    struct { unsigned int max_clusters, free_clusters, max_sectors, sector_size, sectors_per_cluster; } info;
+    void *arg = &info;
+    char device[8];
+    const char *colon = strchr(path, ':');
+    if (!colon || colon - path > 4) return -1;
+    snprintf(device, sizeof(device), "%.*s:", (int)(colon - path), path);
+    memset(&info, 0, sizeof(info));
+    if (sceIoDevctl(device, 0x02425818, &arg, sizeof(arg), NULL, 0) < 0) return -1;
+    uint64_t cluster = (uint64_t)info.sector_size * info.sectors_per_cluster;
+    if (!cluster || cluster > INT64_MAX / (info.free_clusters ? info.free_clusters : 1)) return -1;
+    return (int64_t)(cluster * info.free_clusters);
+}
+
 int fs_mkdir(const char *path)
 {
     char tmp[PM_PATH_MAX];
@@ -93,6 +108,15 @@ int fs_rmdir(const char *path)
 int fs_rename(const char *from, const char *to)
 {
     return sceIoRename(from, to) >= 0 ? 0 : -1;
+}
+
+int fs_sync(const char *path)
+{
+    const char *colon = strchr(path, ':');
+    char device[16];
+    if (!colon || colon - path + 2 > (int)sizeof(device)) return -1;
+    snprintf(device, sizeof(device), "%.*s:", (int)(colon - path), path);
+    return sceIoSync(device, 0) >= 0 ? 0 : -1;
 }
 
 const char *fs_native_path(const char *path, char *buf, int size)
@@ -124,7 +148,17 @@ int fs_list(const char *path, int (*cb)(void *ud, const char *name, int is_dir),
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
+
+int fs_sync(const char *path)
+{
+    fs_file f = fs_open(path, FS_READ);
+    if (f < 0) return -1;
+    int ret = fsync(f);
+    fs_close(f);
+    return ret == 0 ? 0 : -1;
+}
 
 /* "ms0:/a/b" -> "$PM_FS_ROOT/ms0/a/b" */
 static const char *map_path(const char *path, char *buf, size_t size)
@@ -155,7 +189,21 @@ fs_file fs_open(const char *path, int mode)
 }
 
 int fs_read(fs_file f, void *buf, int size) { return (int)read(f, buf, size); }
-int fs_write(fs_file f, const void *buf, int size) { return (int)write(f, buf, size); }
+#ifdef PM_FS_TESTING
+static int writes_before_failure = -1;
+static int64_t test_ms0_free = -2, test_ef0_free = -2;
+void fs_test_fail_after_writes(int n) { writes_before_failure = n; }
+void fs_test_free_bytes(int64_t ms0, int64_t ef0) { test_ms0_free = ms0; test_ef0_free = ef0; }
+#endif
+
+int fs_write(fs_file f, const void *buf, int size)
+{
+#ifdef PM_FS_TESTING
+    if (writes_before_failure == 0) { writes_before_failure = -1; return -1; }
+    if (writes_before_failure > 0) writes_before_failure--;
+#endif
+    return (int)write(f, buf, size);
+}
 int64_t fs_seek(fs_file f, int64_t offset, int whence) { return lseek(f, offset, whence); }
 void fs_close(fs_file f) { if (f >= 0) close(f); }
 
@@ -179,6 +227,28 @@ int64_t fs_size(const char *path)
     struct stat st;
     if (stat(map_path(path, buf, sizeof(buf)), &st) != 0) return -1;
     return st.st_size;
+}
+
+int64_t fs_free_bytes(const char *path)
+{
+#ifdef PM_FS_TESTING
+    int64_t override = strncmp(path, "ef0:", 4) == 0 ? test_ef0_free : test_ms0_free;
+    if (override != -2) return override;
+#endif
+    char mapped[1024], parent[PM_PATH_MAX];
+    struct statvfs info;
+    pm_strlcpy(parent, path, sizeof(parent));
+    for (;;) {
+        if (statvfs(map_path(parent, mapped, sizeof(mapped)), &info) == 0) {
+            uint64_t block = info.f_frsize;
+            if (!block || info.f_bavail > INT64_MAX / block) return -1;
+            return (int64_t)(block * info.f_bavail);
+        }
+        char *slash = strrchr(parent, '/');
+        const char *colon = strchr(parent, ':');
+        if (!slash || slash == parent || (colon && slash <= colon + 1)) return -1;
+        *slash = 0;
+    }
 }
 
 int fs_mkdir(const char *path)
