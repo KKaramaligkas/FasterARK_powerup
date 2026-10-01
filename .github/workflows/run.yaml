@@ -32,6 +32,7 @@ jobs:
         run: |
           python3 tools/ci_toolchains.py check
           python3 -m unittest discover -s tools/tests
+          python3 tools/check_store_downloads.py PluginManager/store/store.json
   build:
     needs: test
     runs-on: ubuntu-24.04
@@ -133,6 +134,7 @@ jobs:
           arm-vita-eabi-gcc --version >> dist/compiler-versions.txt
           git rev-parse HEAD > dist/source-commit.txt
           sha256sum dist/*.zip dist/*.vpk > dist/SHA256SUMS
+          python3 tools/release_store.py --artifacts dist --output dist/store.json
       - name: Upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -189,5 +191,6 @@ jobs:
             dist/psp-packages.txt
             dist/compiler-versions.txt
             dist/source-commit.txt
+            dist/store.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
