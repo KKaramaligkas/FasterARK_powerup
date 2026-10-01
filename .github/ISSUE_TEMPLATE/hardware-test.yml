@@ -1,0 +1,29 @@
+name: Hardware test result
+description: Record a release candidate test on a PSP or PS Vita
+title: "[Hardware test]: "
+body:
+  - type: input
+    id: candidate
+    attributes:
+      label: Candidate commit, package name, and SHA-256
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device model, motherboard if known, and firmware
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: ARK version, storage device, and network setup
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Results and evidence
+      description: Use docs/hardware-release-checklist.md; mark unavailable checks Not tested. Include steps, errors, and logs for failures.
+    validations:
+      required: true
