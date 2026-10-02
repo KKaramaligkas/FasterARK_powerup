@@ -42,7 +42,7 @@ class ReleaseStore(unittest.TestCase):
         seed = release.prepare(store, "5.1.10", "1.0.7")
         checks.validate(seed)
         browser = seed["entries"][-1]
-        self.assertEqual(browser["version"], "0.1.0")
+        self.assertEqual(browser["version"], "0.2.0")
         self.assertEqual(browser["install"][0]["checksumFile"], "ARKBrowser.zip")
         with tempfile.TemporaryDirectory() as folder:
             for name in ("ARK_UPDATE.zip", "PluginManager.zip", "ARKBrowser.zip"):
