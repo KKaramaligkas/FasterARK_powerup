@@ -78,6 +78,9 @@ describing a release candidate as hardware-tested.
 Record the exact build, model, firmware, storage device, access point, and page URLs.
 
 - [ ] Launch standalone `ARKBrowser.zip` from Game; confirm the CA bundle loads.
+- [ ] Install ARK Browser with Plugin Manager on PSP-3000. Record the Plugin Manager version and the last displayed installation stage if it stalls.
+- [ ] Cancel while downloading release checksums and the browser archive, including a server that stops responding; return to the store and retry successfully.
+- [ ] Check HOME exit during installation, then relaunch Plugin Manager and confirm recovery completes without changing the previous installation.
 - [ ] On PSP-1000, open a text page over verified TLS 1.2 without running out of memory.
 - [ ] Open a plain HTTP page; check the unencrypted indicator.
 - [ ] Reject expired/untrusted/wrong-host certificates; check clock-error guidance.

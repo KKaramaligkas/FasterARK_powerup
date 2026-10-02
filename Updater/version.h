@@ -4,7 +4,7 @@
 // ARK Version
 #define ARK_MAJOR_VERSION 5
 #define ARK_MINOR_VERSION 1
-#define ARK_MICRO_VERSION 10
+#define ARK_MICRO_VERSION 11
 #define ARK_VERSION_SUFFIX ""
 
 #endif
