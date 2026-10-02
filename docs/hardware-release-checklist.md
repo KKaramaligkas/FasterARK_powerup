@@ -106,3 +106,18 @@ Record the exact build, model, firmware, storage device, access point, and page 
       responsive and available text is shown.
 - [ ] Confirm HTTPS rejects HTTP assets and script/GET/module requests reject
       cross-origin targets and redirects. Repeat on Vita/Adrenaline.
+
+### Browser 0.3 (tested in PPSSPP; pending physical validation)
+
+- [ ] Move the pointer with the analog stick across a long page; push past the
+      bottom and top edges to scroll; check that scrolling stays smooth.
+- [ ] On google.com, find the search box, jump to it with R, type with the
+      on-screen keyboard and record what the results page shows.
+- [ ] Search from the start page and the Triangle address bar (DuckDuckGo Lite);
+      open a result with the pointer and Confirm, and go back.
+- [ ] Sign in to a site with a POST form; quit and relaunch, and confirm the
+      cookie in `cookies.txt` keeps you signed in. Clear cookies from Start.
+- [ ] Use a checkbox, radio buttons, a drop-down list and a reset button.
+- [ ] Compare a Wikipedia article in the page view and the reader view (Select).
+- [ ] On PSP-1000, open a large page and check memory and layout time.
+- [ ] Record a page that lays out wrongly, with its address, for follow-up.

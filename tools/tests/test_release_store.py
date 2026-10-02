@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,7 +43,8 @@ class ReleaseStore(unittest.TestCase):
         seed = release.prepare(store, "5.1.10", "1.0.7")
         checks.validate(seed)
         browser = seed["entries"][-1]
-        self.assertEqual(browser["version"], "0.2.0")
+        header = (Path(__file__).parents[2] / "Browser/src/version.h").read_text()
+        self.assertEqual(browser["version"], re.search(r'APP_VERSION\s+"([^"]+)"', header).group(1))
         self.assertEqual(browser["install"][0]["checksumFile"], "ARKBrowser.zip")
         with tempfile.TemporaryDirectory() as folder:
             for name in ("ARK_UPDATE.zip", "PluginManager.zip", "ARKBrowser.zip"):
