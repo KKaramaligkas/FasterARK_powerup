@@ -36,6 +36,20 @@ class ReleaseStore(unittest.TestCase):
             self.assertEqual(live["install"][0]["sha256"], hashlib.sha256(baked["install"][0]["checksumFile"].encode()).hexdigest())
             self.assertNotIn("sha256Url", live["install"][0])
 
+    def test_browser_asset_uses_the_release_manifest_then_its_actual_hash(self):
+        store = self.fixture()
+        store["entries"].append({"id": "arkbrowser", "install": [{"type": "download", "url": "old"}]})
+        seed = release.prepare(store, "5.1.10", "1.0.7")
+        checks.validate(seed)
+        browser = seed["entries"][-1]
+        self.assertEqual(browser["version"], "0.1.0")
+        self.assertEqual(browser["install"][0]["checksumFile"], "ARKBrowser.zip")
+        with tempfile.TemporaryDirectory() as folder:
+            for name in ("ARK_UPDATE.zip", "PluginManager.zip", "ARKBrowser.zip"):
+                (Path(folder) / name).write_bytes(b"fixture")
+            published = release.prepare(seed, "5.1.10", "1.0.7", folder)
+        self.assertEqual(published["entries"][-1]["install"][0]["sha256"], hashlib.sha256(b"fixture").hexdigest())
+
     def test_moving_download_is_rejected(self):
         with self.assertRaises(ValueError):
             checks.validate(self.fixture())

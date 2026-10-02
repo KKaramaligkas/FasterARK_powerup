@@ -1,4 +1,4 @@
-.PHONY: psp vita updater translations pluginmanager flash0 version
+.PHONY: psp vita updater translations pluginmanager browser flash0 version
 
 PY = $(shell which python3)
 PSPDEV = $(shell psp-config --pspdev-path)
@@ -9,7 +9,7 @@ LANGFOLDER = Resources/Language/Translations/resources
 FLASH0 = build/FLASH0.ARK
 VERSION_TXT = build/VERSION.TXT
 
-all: translations themes pluginmanager flash0 psp vita updater
+all: translations themes pluginmanager browser flash0 psp vita updater
 	echo "All Done!"
 
 # Plugin Manager app (PSP/APPS/PluginManager), also released on its own for
@@ -19,6 +19,12 @@ pluginmanager:
 	make -C PluginManager package
 	mkdir -p dist
 	cp PluginManager/dist/PluginManager.zip dist/
+
+# Standalone lightweight HTTPS browser, also included in the Full PSP package.
+browser:
+	make -C Browser package
+	mkdir -p dist
+	cp Browser/dist/ARKBrowser.zip dist/
 
 # ARK's FLASH0.ARK with two modules built here: XMBControl from XMBControl/
 # (Plugin Manager entry under Custom Launcher and the XMB "Plugins" category)
@@ -53,7 +59,7 @@ themes:
 	cd dist/tmp/ && zip -m -r themes.zip * && cd ../../ && mv dist/tmp/themes.zip dist/
 	rm -rf dist/tmp
 
-psp: translations pluginmanager flash0 version
+psp: translations pluginmanager browser flash0 version
 	make -C PSP
 #	PSP Lite Install
 	mkdir -p dist/tmp/PSP/GAME/FasterARK/
@@ -78,6 +84,7 @@ psp: translations pluginmanager flash0 version
 	cp $(VERSION_TXT) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp Resources/Extras/* dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r PluginManager/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
+	cp -r Browser/dist/PSP/GAME/ARKBrowser dist/tmp/PSP/GAME/
 	cp Resources/Language/Translations/LANG.ARK dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r Resources/CustomIPL dist/tmp/PSP/GAME/
 	cp -r Resources/DC10 dist/tmp/PSP/GAME/
@@ -184,6 +191,8 @@ clean:
 	rm -f PSVita/loader/psp/eboot/iso_files/psp_game/ICON0.PNG
 	rm -f PSVita/loader/psp/pboot/ICON0.PNG
 	make -C PSP clean
+	make -C Browser clean
+	rm -rf Browser/dist
 	make -C PluginManager clean
 	rm -rf PluginManager/dist
 	make -C XMBControl clean
