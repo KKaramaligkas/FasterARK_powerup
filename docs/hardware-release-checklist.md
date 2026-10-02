@@ -92,3 +92,17 @@ Record the exact build, model, firmware, storage device, access point, and page 
 - [ ] Confirm PSP Go on both storage devices; check Vita/Adrenaline separately.
 - [ ] Check HOME exit during a request, after a request, and while using the keyboard.
 - [ ] Capture screenshots of the start page, HTTPS page, link list, and download progress.
+
+### Browser 0.2 (pending physical validation)
+
+- [ ] On PSP-3000, compare CERN and CNN Lite with JavaScript on/off and reload.
+- [ ] Open an 8 MB compressed response; cancel during receipt and parsing; verify
+      the current page remains visible and `.cache/page.tmp` is removed.
+- [ ] Use a local HTTPS test page with modern syntax, module imports, async GET,
+      DOMContentLoaded, DOM text mutations, inline/external CSS, and anchors.
+- [ ] Confirm colors, bold, variable font size, alignment and underlines; scroll
+      all the way to the last line with large fonts.
+- [ ] Cancel an infinite loop; exceed script heap limits; verify the app remains
+      responsive and available text is shown.
+- [ ] Confirm HTTPS rejects HTTP assets and script/GET/module requests reject
+      cross-origin targets and redirects. Repeat on Vita/Adrenaline.

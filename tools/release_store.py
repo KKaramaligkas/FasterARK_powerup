@@ -27,7 +27,9 @@ def prepare(store, ark_version, pm_version, artifacts=None):
     expected = {"ark": (ark_version, "ARK_UPDATE.zip"), "pluginmanager": (pm_version, "PluginManager.zip")}
     # The browser is optional in older stores, but its own archive also needs
     # an external checksum manifest while that archive is being built.
-    expected["arkbrowser"] = ("0.1.0", "ARKBrowser.zip")
+    browser = re.search(r'^#define APP_VERSION\s+"([a-zA-Z0-9._-]+)"',
+                        (ROOT / "Browser/src/version.h").read_text(), re.M).group(1)
+    expected["arkbrowser"] = (browser, "ARKBrowser.zip")
     for entry in store["entries"]:
         if entry["id"] not in expected:
             continue
