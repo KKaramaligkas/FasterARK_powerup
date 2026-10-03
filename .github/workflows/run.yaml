@@ -23,7 +23,7 @@ jobs:
       - name: Host test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev openssl
+          sudo apt-get install -y libcjson-dev libunarr-dev libmbedtls-dev zlib1g-dev libcurl4-openssl-dev openssl libgnutls28-dev lftp
       - name: Sanitized core and recovery tests
         env:
           UBSAN_OPTIONS: halt_on_error=1
@@ -32,6 +32,10 @@ jobs:
         env:
           UBSAN_OPTIONS: halt_on_error=1
         run: make -C Browser/tests check
+      - name: Sanitized launcher FTP server tests
+        env:
+          UBSAN_OPTIONS: halt_on_error=1
+        run: make -C Launcher/ftpd/tests check
       - name: Validate toolchain lock
         run: |
           python3 tools/ci_toolchains.py check
@@ -83,6 +87,9 @@ jobs:
 
       - name: Plugin Manager libraries via psp-pacman
         run: psp-pacman -S --needed curl mbedtls cjson unarr libintrafont libpng zlib bzip2 liblzma --noconfirm
+
+      - name: Custom Launcher libraries via psp-pacman
+        run: psp-pacman -S --needed libpspav libpspftp libpspvram libpspmath --noconfirm
 
       - name: Update psp-cfw-sdk
         run: python3 tools/ci_toolchains.py download psp_cfw_sdk psp-cfw-sdk.zip

@@ -1,4 +1,4 @@
-.PHONY: psp vita updater translations pluginmanager browser flash0 version
+.PHONY: psp vita updater translations pluginmanager browser launcher flash0 version
 
 PY = $(shell which python3)
 PSPDEV = $(shell psp-config --pspdev-path)
@@ -9,7 +9,7 @@ LANGFOLDER = Resources/Language/Translations/resources
 FLASH0 = build/FLASH0.ARK
 VERSION_TXT = build/VERSION.TXT
 
-all: translations themes pluginmanager browser flash0 psp vita updater
+all: translations themes pluginmanager browser launcher flash0 psp vita updater
 	echo "All Done!"
 
 # Plugin Manager app (PSP/APPS/PluginManager), also released on its own for
@@ -25,6 +25,13 @@ browser:
 	make -C Browser package
 	mkdir -p dist
 	cp Browser/dist/ARKBrowser.zip dist/
+
+# ARK's Custom Launcher (ARK_01234/VBOOT.PBP), built from Launcher/ for its
+# FTP server with TLS (Launcher/ftpd); see Launcher/README.md
+launcher:
+	make -C Launcher
+	mkdir -p build
+	cp Launcher/EBOOT.PBP build/VBOOT.PBP
 
 # ARK's FLASH0.ARK with two modules built here: XMBControl from XMBControl/
 # (Plugin Manager entry under Custom Launcher and the XMB "Plugins" category)
@@ -59,7 +66,7 @@ themes:
 	cd dist/tmp/ && zip -m -r themes.zip * && cd ../../ && mv dist/tmp/themes.zip dist/
 	rm -rf dist/tmp
 
-psp: translations pluginmanager browser flash0 version
+psp: translations pluginmanager browser launcher flash0 version
 	make -C PSP
 #	PSP Lite Install
 	mkdir -p dist/tmp/PSP/GAME/FasterARK/
@@ -83,6 +90,7 @@ psp: translations pluginmanager browser flash0 version
 	cp $(FLASH0) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp $(VERSION_TXT) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp Resources/Extras/* dist/tmp/PSP/SAVEDATA/ARK_01234/
+	cp build/VBOOT.PBP dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r PluginManager/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
 	cp -r Browser/dist/PSP/GAME/ARKBrowser dist/tmp/PSP/GAME/
 	cp Resources/Language/Translations/LANG.ARK dist/tmp/PSP/SAVEDATA/ARK_01234/
@@ -110,7 +118,7 @@ psp: translations pluginmanager browser flash0 version
 	cd dist/tmp/ && zip -m -r FasterARK_psp_full.zip * && cd ../../ && mv dist/tmp/FasterARK_psp_full.zip dist/
 	rm -r dist/tmp/
 
-vita: translations flash0 version
+vita: translations launcher flash0 version
 	mkdir -p dist
 	mkdir -p PSVita/res/save
 	mkdir -p PSVita/loader/psp/eboot/iso_files/psp_game/sysdir
@@ -121,6 +129,7 @@ vita: translations flash0 version
 	cp $(FLASH0) PSVita/res/save/ARK_01234/
 	cp $(VERSION_TXT) PSVita/res/save/ARK_01234/
 	cp -r Resources/Extras/* PSVita/res/save/ARK_01234/
+	cp build/VBOOT.PBP PSVita/res/save/ARK_01234/
 	cp -r Resources/PSVita/* PSVita/res/save/ARK_01234/
 	cp Resources/Language/Translations/LANG.ARK PSVita/res/save/ARK_01234/
 #   ePSP Bubble
@@ -148,7 +157,7 @@ vita: translations flash0 version
 	cd PSVita/build && cmake .. && make && cd ../../
 	cp PSVita/build/FasterARK.vpk dist/FasterARK_psvita.vpk
 
-updater: translations pluginmanager flash0 version
+updater: translations pluginmanager launcher flash0 version
 #	Updater
 	mkdir -p dist/tmp/
 	cp -r Resources/LIBS Updater/Resources/
@@ -162,7 +171,7 @@ updater: translations pluginmanager flash0 version
 	cp Resources/ARK150on660/FLASH150.ARK Updater/Resources/ARK_01234/
 	cp Resources/ARK150on660/LANG150.ARK Updater/Resources/ARK_01234/
 	cp Resources/Language/Translations/LANG.ARK Updater/Resources/ARK_01234/
-	cp Resources/Extras/VBOOT.PBP Updater/Resources/ARK_01234/
+	cp build/VBOOT.PBP Updater/Resources/ARK_01234/
 	cp Resources/Extras/VSHMENU.PRX Updater/Resources/ARK_01234/
 	cp Resources/PSVita/XBOOT.PBP Updater/Resources/ARK_01234/
 	make -C Resources/Peops
@@ -192,6 +201,8 @@ clean:
 	rm -f PSVita/loader/psp/pboot/ICON0.PNG
 	make -C PSP clean
 	make -C Browser clean
+	make -C Launcher clean
+	rm -rf Launcher/shared
 	rm -rf Browser/dist
 	make -C PluginManager clean
 	rm -rf PluginManager/dist

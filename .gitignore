@@ -19,3 +19,16 @@ __pycache__/
 /Resources/Peops/*.elf
 /Resources/Peops/*.prx
 /Resources/Language/Translations/LANG.ARK
+# the Custom Launcher, "make launcher"
+/Launcher/**/*.o
+/Launcher/*.elf
+/Launcher/*.prx
+/Launcher/EBOOT.PBP
+/Launcher/PARAM.SFO
+/Launcher/shared/
+/Launcher/ftpd/tests/server
+/Launcher/ftpd/tests/fzclient
+/Launcher/ftpd/tests/psp/*.elf
+/Launcher/ftpd/tests/psp/*.prx
+/Launcher/ftpd/tests/psp/EBOOT.PBP
+/Launcher/ftpd/tests/psp/PARAM.SFO

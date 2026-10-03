@@ -48,6 +48,9 @@ store, installed-plugin controls, and manual package update route.
 | Cancel while committing package files | Original files, configuration, and database restored | Not tested |
 | Insufficient storage | Useful error; prior installation remains usable | Not tested |
 | Restart after an interrupted package commit | Recovery completes before the installed list is loaded | Not tested |
+| Custom Launcher FTP server with FileZilla's default settings (Quickconnect) | Certificate prompt shows the fingerprint on the PSP's Network screen; browsing, upload and download over TLS; two files at once | Not tested |
+| Custom Launcher FTP server: upload speed of a 1 GB ISO, with and without TLS | Faster than the old server's 300 KB/s; note both speeds | Not tested |
+| Custom Launcher FTP server: Windows Explorer `ftp://` address | Plain FTP still works | Not tested |
 | Storage absent during recovery | Further changes refused; reconnecting permits recovery | Not tested |
 | ARK update from Plugin Manager | Correct candidate downloaded; updater starts and completes | Not tested |
 | XMB Plugins category enabled | Correct items and names; selecting a plugin opens its details | Not tested |

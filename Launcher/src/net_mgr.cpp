@@ -1,0 +1,382 @@
+#include <sstream>
+#include <fstream>
+#include <psphttp.h>
+#include <pspnet_apctl.h>
+
+#include "ftpd.h"
+#include <systemctrl.h>
+
+#include "net_mgr.h"
+#include "network.h"
+#include "system_mgr.h"
+#include "eboot.h"
+#include "lang.h"
+#include "browser.h"
+
+#define MAX_LINES 9
+
+static struct {
+    string msg[MAX_LINES];
+    unsigned char cont;
+} vla;
+/* FasterARK: the FTP server's connections each have a thread, and they add
+   messages while the screen draws them */
+static SceUID vla_lock = sceKernelCreateSema("net_messages", 0, 1, 1, NULL);
+
+static SceUID ftp_thread = -1;
+static char pspIpAddr[32];
+
+static SceULong64 cur_download=0, max_download=0;
+
+static void addMessage(const char* msg){
+    if (msg==NULL)
+        return;
+    sceKernelWaitSema(vla_lock, 1, NULL);
+    if (vla.cont >= MAX_LINES){
+        for (int i=1; i<MAX_LINES; i++)
+            vla.msg[i-1] = vla.msg[i];
+        vla.cont--;
+    }
+    vla.msg[vla.cont++] = msg;
+    sceKernelSignalSema(vla_lock, 1);
+}
+
+void NetworkManager::draw(){
+
+    static int x, y, w, h;
+
+    switch (animation){
+    case -1:
+        if (w < 400 || h < 200){
+            
+            w += 50;
+            if (w > 400)
+                w = 400;
+            
+            h += 30;
+            if (h > 200)
+                h = 200;
+
+            x = (480-w)/2;
+            y = (272-h)/2;
+
+            common::getImage(IMAGE_DIALOG)->draw_scale(x, y, w, h);
+        }
+        else {
+            animation = 0;
+            common::getImage(IMAGE_DIALOG)->draw_scale(x, y, w, h);
+        }
+        break;
+    case 0:
+        common::getImage(IMAGE_DIALOG)->draw_scale(20, 30, 450, 235);
+        
+        char buffer[128];
+        
+        if (ftp_thread>=0){
+            snprintf(buffer, 128, TR("FTP Server is running @ %s. Press %s to stop.").c_str(), pspIpAddr, (common::config.swap_buttons)? "X" : "()");
+        }
+        else{
+            snprintf(buffer, 128, TR("FTP Server is stopped. Press %s to start.").c_str(), (common::config.swap_buttons)? "()" : "X");
+        }
+        static TextScroll scroll = {0, 0, 0, 430};
+        common::printText(30, 50, buffer, GRAY_COLOR, SIZE_BIG, 1, &scroll);
+        common::printText(30, 70, "Press [_] to check for Updates", GRAY_COLOR, SIZE_BIG, 1);
+        
+        y = 90;
+        
+        {
+            string lines[MAX_LINES];
+            sceKernelWaitSema(vla_lock, 1, NULL);
+            for (int i=0; i<MAX_LINES; i++)
+                lines[i] = vla.msg[i];
+            sceKernelSignalSema(vla_lock, 1);
+            for (int i=0; i<MAX_LINES; i++){
+                common::printText(30, y, lines[i].c_str());
+                y+=20;
+            }
+        }
+
+        if (max_download){
+            double percent = double(cur_download)/double(max_download);
+            ya2d_draw_rect(20, 265, 450, 5, DARKGRAY, 1);
+            ya2d_draw_rect(20, 266, 450*percent, 3, LITEGRAY, 1);
+        }
+
+        break;
+    case 1:
+        if (w > 0 || h > 0){
+        
+            w -= 50;
+            if (w < 0)
+                w = 0;
+            
+            h -= 30;
+            if (h < 0)
+                h = 0;
+            
+            x = (480-w)/2;
+            y = (272-h)/2;
+            
+            common::getImage(IMAGE_DIALOG)->draw_scale(x, y, w, h);
+        }
+        else {
+            animation = -2;
+        }
+        break;
+    default: break;
+    }
+}
+
+static void startFTP(){
+    if (ftp_thread >= 0) return;
+
+    SystemMgr::pauseDraw();
+    
+    char* err = NULL;
+
+    int ret;
+    if ((ret=initializeNetwork()) >= 0){
+        if ((ret=connect_to_apctl()) >= 0){
+            ret = sceNetApctlGetInfo(8, (SceNetApctlInfo*)pspIpAddr);
+            if (pspIpAddr[0] != '\0'){
+                static char* device = "ms0:";
+                const char* cwd = Browser::getCWD();
+                device[0] = cwd[0];
+                device[1] = cwd[1];
+                ftpdSetMsgHandler(addMessage);
+                ftpdSetDevice(device);
+                ftpdSetDataDir(common::ark_config.arkpath); // FasterARK: TLS key and certificate
+                ftp_thread = sceKernelCreateThread("ftpd_main_thread", ftpdLoop, 0x18, 0x2000, 0, 0);
+                sceKernelStartThread(ftp_thread, 0, 0);
+            }
+            else{
+                err = "Could not get IP address";
+            }
+        }
+        else{
+            err = "Could not connect to Access Point";
+        }
+    }
+    else{
+        err = "Could not initialize network";
+    }
+    
+    if (err){
+        char buf[128];
+        snprintf(buf, 128, "%s: 0x%X", TR(err).c_str(), ret);
+        addMessage(buf);
+    }
+    
+    SystemMgr::resumeDraw();
+}
+
+static void stopFTP(){
+    addMessage("Disconnecting FTP server");
+    ftpdExitHandler(0, NULL);
+    sceKernelWaitThreadEnd(ftp_thread, NULL);
+    sceKernelDeleteThread(ftp_thread);
+    shutdownNetwork();
+    addMessage("FTP Disconnected");
+    ftp_thread = -1;
+    memset(pspIpAddr, 0, sizeof(pspIpAddr));
+}
+
+static string parsePspUpdateList(u32* update_ver){
+
+    std::ifstream input("psp-updatelist.txt");
+
+    for( std::string line; getline( input, line ); ){
+        // scan for all the tokens
+        size_t image_version = line.find("ImageVersion=");
+        size_t cdn = line.find("CDN=");
+        size_t eboot_pbp = line.find("EBOOT.PBP");
+        if (image_version != string::npos && cdn != string::npos && eboot_pbp != string::npos){
+            // grab version string
+            string ver = line.substr(image_version+13, 8);
+            // convert from hex to u32
+            *update_ver = strtol(ver.c_str(), NULL, 16);
+            // grab eboot url
+            string eboot_url = line.substr(cdn+4);
+            // trim URL
+            char* eboot_path = (char*)eboot_url.c_str();
+            char* eboot_pbp = strstr(eboot_path, "EBOOT.PBP");
+            eboot_pbp[9] = 0; // C++ strings are inmutable? not round here they ain't
+            return string(eboot_path);
+        }
+    }
+
+    *update_ver = 0;
+    return "";
+}
+
+static string getServerUrl(){
+    // read first line of server file
+    std::ifstream input("UPDATER.TXT");
+    string line = ""; getline(input, line);
+    // trim text
+    if (line.size() == 0) return "";
+    if (line[line.size()-1] == '\n') line = line.substr(0, line.size()-1);
+    if (line[line.size()-1] == '\r') line = line.substr(0, line.size()-1);
+    // append psp-updatelist.txt
+    if (line[line.size()-1] != '/') line += "/";
+    line += "psp-updatelist.txt";
+    return line;
+}
+
+static void checkUpdates(){
+    char* err = NULL;
+    int ret;
+    string path = getServerUrl();
+    char* update_folder = "ms0:/PSP/GAME/UPDATE";
+    char* update_eboot = "ms0:/PSP/GAME/UPDATE/EBOOT.PBP";
+    string updater_url;
+    u32 update_ver, version;
+    bool do_update = false;
+    char buf[128];
+    cur_download = max_download = 0;
+
+    if (common::psp_model == PSP_GO){
+        update_folder[0] = update_eboot[0] = 'e';
+        update_folder[1] = update_eboot[1] = 'f';
+    }
+    else if (common::ark_config.exec_mode == PS_VITA){
+        // redirect to ms0:/PSP/APPS/UPDATE/VBOOT.PBP
+        update_eboot[21] = 'V';
+        update_folder[9] = update_eboot[9] = 'A';
+        update_folder[10] = update_eboot[10] = 'P';
+        update_folder[11] = update_eboot[11] = 'P';
+        update_folder[12] = update_eboot[12] = 'S';
+        update_folder[13] = 0;
+        sceIoMkdir(update_folder, 0777);
+        update_folder[13] = '/';
+    }
+
+    SystemMgr::pauseDraw();
+    if ((ret=initializeNetwork()) >= 0){
+        if ((ret=connect_to_apctl()) >= 0){
+            SystemMgr::resumeDraw();
+            if (ftp_thread>=0) stopFTP();
+
+            addMessage("Checking for updates");
+
+            sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);
+            sceUtilityLoadModule(PSP_MODULE_NET_PARSEHTTP);
+            sceUtilityLoadModule(PSP_MODULE_NET_HTTP);
+
+            int templateid=-1, connectionid=-1, requestid=-1, fd=-1;
+
+            if ((ret=sceHttpInit(20000)) < 0){
+                err = "Could not initialize HTTP library";
+                goto update_end;
+            }
+
+            addMessage("Downloading psp-updatelist.txt");
+
+            wget((char*)path.c_str(), "psp-updatelist.txt");
+
+            updater_url = parsePspUpdateList(&update_ver);
+
+            sceIoRemove("psp-updatelist.txt");
+
+            if (!update_ver || updater_url.size() == 0){
+                do_update = false;
+            }
+            else{
+                snprintf(buf, 128, TR("Got version %p @ %s").c_str(), update_ver, updater_url.c_str());
+                addMessage(buf);
+
+                version = sctrlHENGetVersion() | sctrlHENGetMinorVersion(); // ARK's full version number
+                do_update = common::config.force_update || version < update_ver;
+            }
+
+            if (!do_update){
+                addMessage("No need to update!");
+            }
+            else{
+                addMessage("Downloading updater");
+                sceIoMkdir(update_folder, 0777);
+                wget((char*)updater_url.c_str(), update_eboot, &cur_download, &max_download);
+            }
+
+            update_end:
+            sceHttpEnd();
+            sceUtilityUnloadModule(PSP_MODULE_NET_HTTP);
+            sceUtilityUnloadModule(PSP_MODULE_NET_PARSEHTTP);
+            sceUtilityUnloadModule(PSP_MODULE_NET_PARSEURI);
+            shutdownNetwork();
+
+            if (do_update){
+                addMessage("Running Updater");
+                Eboot* eboot = new Eboot(update_eboot);
+                eboot->execute();
+            }
+        }
+        else{
+            err = "Could not connect to Access Point";
+            SystemMgr::resumeDraw();
+        }
+    }
+    else{
+        err = "Could not initialize network";
+        SystemMgr::resumeDraw();
+    }
+
+    if (err){
+        snprintf(buf, 128, "%s: 0x%X", TR(err).c_str(), ret);
+        addMessage(buf);
+    }
+}
+
+void NetworkManager::control(Controller* pad){
+
+    if (pad->accept() && ftp_thread < 0){
+        startFTP();
+    }
+    else if (pad->decline() && ftp_thread>=0){
+        stopFTP();
+    }
+    else if (pad->square()){
+        checkUpdates();
+    }
+
+}
+
+void NetworkManager::pause(){
+    animation = 1;
+    while (animation != -2)
+        sceKernelDelayThread(0);
+}
+
+void NetworkManager::resume(){
+    animation = -1;
+    while (animation != 0)
+        sceKernelDelayThread(0);
+}
+std::string NetworkManager::getFooter(){
+    return "";
+}
+
+std::string NetworkManager::getInfo(){
+    return "Network Tools";
+}
+
+std::string NetworkManager::getName(){
+    return "Network";
+}
+
+void NetworkManager::setFooter(std::string footer){
+
+}
+
+void NetworkManager::setInfo(std::string info){
+    
+}
+
+void NetworkManager::setName(std::string name){
+
+}
+
+Image* NetworkManager::getIcon(){
+    return common::getImage(IMAGE_FTP);
+}
+
