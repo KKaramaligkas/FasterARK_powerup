@@ -63,6 +63,10 @@ char* savedata_files_full[] = {
     "IDSREG.PRX",
     "USBDEV.PRX",
     "IOP.PRX",
+    // the Custom Launcher's FTP server identity: a new one would make FTP
+    // clients warn that the certificate changed
+    "FTPS_KEY.PEM",
+    "FTPS_CRT.PEM",
 };
 
 char* savedata_files_lite[] = {
