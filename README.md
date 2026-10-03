@@ -8,7 +8,7 @@ Start with the [package comparison and installation guide](docs/quick-start.md).
 The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `DC10`: ultimate recovery tool for PSP (installation and usage: https://github.com/PSP-Arkfive/Despertar-Del-Cementerio).
 - `Overclock Stress Tester`: app useful for finding out the maximum overclock that your PSP supports.
-- `Custom Launcher`: an Open Source homebrew replacement for the `XMB`.
+- `Custom Launcher`: an Open Source homebrew replacement for the `XMB`. Its FTP server (Network) is FasterARK's: FTP over TLS 1.2 and several connections at once, so FileZilla works with its default settings. [Details](Launcher/README.md).
 - `VSH Menu`: a hub for the XMB.
 - `Translations`: for both `XMB` and `CL`.
 - `LEDA Plugin`: allows running `1.50 homebrew` on any firmware and psp or vita model.
