@@ -120,4 +120,6 @@ Record the exact build, model, firmware, storage device, access point, and page 
 - [ ] Use a checkbox, radio buttons, a drop-down list and a reset button.
 - [ ] Compare a Wikipedia article in the page view and the reader view (Select).
 - [ ] On PSP-1000, open a large page and check memory and layout time.
+- [ ] Open hub.docker.com, ubuntu.com and apache.org and compare them with the
+      PPSSPP screenshots in pull request #13; time how long ubuntu.com takes.
 - [ ] Record a page that lays out wrongly, with its address, for follow-up.
