@@ -8,7 +8,7 @@ Download packages from the [FasterARK releases page](https://github.com/KKaramal
 | PSP on supported official firmware; core setup | `FasterARK_psp_lite.zip` | Lite installation package |
 | PSP on supported official firmware; extras and recovery tools | `FasterARK_psp_full.zip` | Full package, including DC10, Custom Launcher, translations, and Plugin Manager |
 | New Vita installation | `FasterARK_psvita.vpk` | Native Vita installer; requires NoPspEmuDrmArkMod |
-| ARK installed; lightweight HTTPS browsing | `ARKBrowser.zip` | Text browser under `PSP/GAME/ARKBrowser/`; TLS 1.2, links, and downloads |
+| ARK installed; lightweight HTTPS browsing | `ARKBrowser.zip` | Web browser under `PSP/GAME/ARKBrowser/`; page layout, forms, TLS 1.2, and downloads |
 | ARK installed; Plugin Manager only | `PluginManager.zip` | Standalone app under `PSP/APPS/PluginManager/` |
 
 ## Already running ARK
