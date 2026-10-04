@@ -82,11 +82,11 @@
       "id": "arkbrowser",
       "title": "Flow",
       "author": "FasterARK powerup",
-      "version": "0.3.2",
+      "version": "0.4.0",
       "category": "homebrew",
       "license": "GPL-3.0",
       "website": "https://github.com/KKaramaligkas/Flow",
-      "description": "A web browser for the PSP, formerly ARK Browser. Lays pages out with CSS, and you click links and fill in forms with a pointer on the analog stick. Runs page JavaScript on the device, keeps cookies, and uses verified TLS 1.2 HTTPS.",
+      "description": "A web browser for the PSP, formerly ARK Browser. Lays pages out with CSS and shows their JPEG, PNG and GIF pictures, and you click links and fill in forms with a pointer on the analog stick. Runs page JavaScript on the device, keeps cookies, and uses verified TLS 1.2 HTTPS.",
       "notes": "Needs Wi-Fi and a correctly set PSP date. PSP Street has no Wi-Fi. Updating ARK Browser installs Flow in PSP/GAME/Flow, and Flow's first start moves your downloads and cookies there. Tested in PPSSPP on twelve real sites; not yet tested on a real PSP.",
       "compatibility": {
         "models": [

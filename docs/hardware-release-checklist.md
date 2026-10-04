@@ -86,6 +86,7 @@ Record the exact build, model, firmware, storage device, access point, and page 
 - [ ] Cancel while downloading release checksums and the browser archive, including a server that stops responding; return to the store and retry successfully.
 - [ ] Check HOME exit during installation, then relaunch Plugin Manager and confirm recovery completes without changing the previous installation.
 - [ ] On PSP-1000, open a text page over verified TLS 1.2 without running out of memory.
+- [ ] Open a page with many pictures (for example apache.org) on PSP-1000 and on PSP-2000/3000: pictures appear nearest to the screen first, the status bar counts those still loading, scrolling stays smooth, and text doesn't jump when the page is laid out again. Open a link while pictures load; the next page opens.
 - [ ] Open a plain HTTP page; check the unencrypted indicator.
 - [ ] Reject expired/untrusted/wrong-host certificates; check clock-error guidance.
 - [ ] Reject a server restricted to TLS 1.0/1.1 and an HTTPS-to-HTTP redirect.

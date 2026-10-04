@@ -14,7 +14,7 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `LEDA Plugin`: allows running `1.50 homebrew` on any firmware and psp or vita model.
 - `ARK-150 Addon`: Only usable on 1K, installs the full 1.50 ARK firmware on memory stick to dual boot with latest firmware (installation and usage: https://github.com/PSP-Arkfive/ARK-150).
 - `Plugin Manager`: download, install, update and remove plugins and homebrew over Wi-Fi, like the 3DS's Universal Updater. Also available on its own as `PluginManager.zip`.
-- `Flow` (formerly `ARK Browser`): a web browser that lays pages out on the PSP (CSS boxes, tables, form fields), with a pointer moved by the analog stick, on-device JavaScript, cookies, direct HTTPS using TLS 1.2, and downloads. Also available as `Flow.zip`; launch it from the Game column. [Controls, installation and limits](https://github.com/KKaramaligkas/Flow#readme).
+- `Flow` (formerly `ARK Browser`): a web browser that lays pages out on the PSP (CSS boxes, flex and grid layouts, tables, form fields, and JPEG, PNG and GIF pictures), with a pointer moved by the analog stick, on-device JavaScript, cookies, direct HTTPS using TLS 1.2, and downloads. Also available as `Flow.zip`; launch it from the Game column. [Controls, installation and limits](https://github.com/KKaramaligkas/Flow#readme).
 
 # Plugin Manager
 - It comes with the `Full` variant, and on a `PSP` the updater (`ARK_UPDATE.zip`) installs or updates it too, keeping its settings and list of installed plugins.
