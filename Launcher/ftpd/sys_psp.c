@@ -24,7 +24,7 @@
 #define BSD_EAGAIN      35
 #define BSD_EINPROGRESS 36
 
-/* from the Plugin Manager's entropy.c, which also provides getentropy() for mbedTLS */
+/* from the Plugin Manager's entropy.c (PluginManager/app/src), which also provides getentropy() for mbedTLS */
 void entropy_add(const void *data, size_t len);
 
 /* sceNetInetSelect() takes 256-bit descriptor sets; newlib's fd_set is

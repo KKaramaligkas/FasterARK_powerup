@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
       - name: Host test dependencies
         run: |
           sudo apt-get update
@@ -27,11 +29,12 @@ jobs:
       - name: Sanitized core and recovery tests
         env:
           UBSAN_OPTIONS: halt_on_error=1
-        run: make -C PluginManager/tests check
+        # against the store installed copies download, not the app repository's copy
+        run: make -C PluginManager/app/tests check SEED="$PWD/PluginManager/store/store.json"
       - name: Sanitized browser and TLS policy tests
         env:
           UBSAN_OPTIONS: halt_on_error=1
-        run: make -C Browser/tests check
+        run: make -C Flow/tests check
       - name: Sanitized launcher FTP server tests
         env:
           UBSAN_OPTIONS: halt_on_error=1

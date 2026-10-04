@@ -13,18 +13,20 @@ all: translations themes pluginmanager browser launcher flash0 psp vita updater
 	echo "All Done!"
 
 # Plugin Manager app (PSP/APPS/PluginManager), also released on its own for
-# the store's self-update and for installs without the Full variant
+# the store's self-update and for installs without the Full variant. Its source
+# is the PluginManager repository (submodule PluginManager/app); the store that
+# installed copies download stays here, and is packaged as the app's own copy.
 pluginmanager:
 	$(PY) tools/release_store.py --seed
-	make -C PluginManager package
+	make -C PluginManager/app package STORE=$(CURDIR)/PluginManager/store/store.json
 	mkdir -p dist
-	cp PluginManager/dist/PluginManager.zip dist/
+	cp PluginManager/app/dist/PluginManager.zip dist/
 
-# Standalone lightweight HTTPS browser, also included in the Full PSP package.
+# Flow, the web browser (submodule Flow), also included in the Full PSP package
 browser:
-	make -C Browser package
+	make -C Flow package
 	mkdir -p dist
-	cp Browser/dist/ARKBrowser.zip dist/
+	cp Flow/dist/Flow.zip dist/
 
 # ARK's Custom Launcher (ARK_01234/VBOOT.PBP), built from Launcher/ for its
 # FTP server with TLS (Launcher/ftpd); see Launcher/README.md
@@ -91,8 +93,8 @@ psp: translations pluginmanager browser launcher flash0 version
 	cp $(VERSION_TXT) dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp Resources/Extras/* dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp build/VBOOT.PBP dist/tmp/PSP/SAVEDATA/ARK_01234/
-	cp -r PluginManager/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
-	cp -r Browser/dist/PSP/GAME/ARKBrowser dist/tmp/PSP/GAME/
+	cp -r PluginManager/app/dist/PSP/APPS/PluginManager dist/tmp/PSP/APPS/
+	cp -r Flow/dist/PSP/GAME/Flow dist/tmp/PSP/GAME/
 	cp Resources/Language/Translations/LANG.ARK dist/tmp/PSP/SAVEDATA/ARK_01234/
 	cp -r Resources/CustomIPL dist/tmp/PSP/GAME/
 	cp -r Resources/DC10 dist/tmp/PSP/GAME/
@@ -164,7 +166,7 @@ updater: translations pluginmanager launcher flash0 version
 	cp -r Resources/ARK_01234 Updater/Resources/
 #	the updater also installs the Plugin Manager app (PSP/APPS/PluginManager)
 	mkdir -p Updater/Resources/APPS
-	cp -r PluginManager/dist/PSP/APPS/PluginManager Updater/Resources/APPS/
+	cp -r PluginManager/app/dist/PSP/APPS/PluginManager Updater/Resources/APPS/
 	cp $(FLASH0) Updater/Resources/ARK_01234/
 	cp $(VERSION_TXT) Updater/Resources/ARK_01234/
 	cp Resources/DC10/DC10.ARK Updater/Resources/ARK_01234/
@@ -200,12 +202,12 @@ clean:
 	rm -f PSVita/loader/psp/eboot/iso_files/psp_game/ICON0.PNG
 	rm -f PSVita/loader/psp/pboot/ICON0.PNG
 	make -C PSP clean
-	make -C Browser clean
+	make -C Flow clean
 	make -C Launcher clean
 	rm -rf Launcher/shared
-	rm -rf Browser/dist
-	make -C PluginManager clean
-	rm -rf PluginManager/dist
+	rm -rf Flow/dist
+	make -C PluginManager/app clean
+	rm -rf PluginManager/app/dist
 	make -C XMBControl clean
 	make -C VSHControl clean
 	make -C Updater clean

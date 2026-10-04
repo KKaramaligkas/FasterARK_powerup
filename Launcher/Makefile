@@ -109,6 +109,6 @@ LIBS = \
 include $(PSPSDK)/lib/build.mak
 
 # FasterARK: the TLS random generator's entropy, shared with the Plugin Manager
-shared/%.o: ../PluginManager/src/%.c
+shared/%.o: ../PluginManager/app/src/%.c
 	mkdir -p shared
 	$(CC) $(CFLAGS) -c $< -o $@

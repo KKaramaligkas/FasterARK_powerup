@@ -43,11 +43,11 @@ class ReleaseStore(unittest.TestCase):
         seed = release.prepare(store, "5.1.10", "1.0.7")
         checks.validate(seed)
         browser = seed["entries"][-1]
-        header = (Path(__file__).parents[2] / "Browser/src/version.h").read_text()
+        header = (Path(__file__).parents[2] / "Flow/src/version.h").read_text()
         self.assertEqual(browser["version"], re.search(r'APP_VERSION\s+"([^"]+)"', header).group(1))
-        self.assertEqual(browser["install"][0]["checksumFile"], "ARKBrowser.zip")
+        self.assertEqual(browser["install"][0]["checksumFile"], "Flow.zip")
         with tempfile.TemporaryDirectory() as folder:
-            for name in ("ARK_UPDATE.zip", "PluginManager.zip", "ARKBrowser.zip"):
+            for name in ("ARK_UPDATE.zip", "PluginManager.zip", "Flow.zip"):
                 (Path(folder) / name).write_bytes(b"fixture")
             published = release.prepare(seed, "5.1.10", "1.0.7", folder)
         self.assertEqual(published["entries"][-1]["install"][0]["sha256"], hashlib.sha256(b"fixture").hexdigest())
