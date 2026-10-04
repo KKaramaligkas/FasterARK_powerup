@@ -1,8 +1,8 @@
 # FasterARK powerup
 
-ARK-5 with a Wi-Fi Plugin Manager, a lightweight HTTPS browser, an optional XMB Plugins category, and PSP and Vita installation packages.
+ARK-5 with a Wi-Fi Plugin Manager, the Flow web browser, an optional XMB Plugins category, and PSP and Vita installation packages.
 
-Start with the [package comparison and installation guide](docs/quick-start.md). For troubleshooting, see the [Plugin Manager guide](PluginManager/README.md).
+Start with the [package comparison and installation guide](docs/quick-start.md). For troubleshooting, see the [Plugin Manager guide](https://github.com/KKaramaligkas/PluginManager#readme).
 
 # Variants
 The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
@@ -14,7 +14,7 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - `LEDA Plugin`: allows running `1.50 homebrew` on any firmware and psp or vita model.
 - `ARK-150 Addon`: Only usable on 1K, installs the full 1.50 ARK firmware on memory stick to dual boot with latest firmware (installation and usage: https://github.com/PSP-Arkfive/ARK-150).
 - `Plugin Manager`: download, install, update and remove plugins and homebrew over Wi-Fi, like the 3DS's Universal Updater. Also available on its own as `PluginManager.zip`.
-- `ARK Browser`: a web browser that lays pages out on the PSP (CSS boxes, tables, form fields), with a pointer moved by the analog stick, on-device JavaScript, cookies, direct HTTPS using TLS 1.2, and downloads. Also available as `ARKBrowser.zip`; launch it from the Game column. [Controls, installation and limits](Browser/README.md).
+- `Flow` (formerly `ARK Browser`): a web browser that lays pages out on the PSP (CSS boxes, flex and grid layouts, tables, form fields, and JPEG, PNG and GIF pictures), with a pointer moved by the analog stick, on-device JavaScript, cookies, direct HTTPS using TLS 1.2, and downloads. Also available as `Flow.zip`; launch it from the Game column. [Controls, installation and limits](https://github.com/KKaramaligkas/Flow#readme).
 
 # Plugin Manager
 - It comes with the `Full` variant, and on a `PSP` the updater (`ARK_UPDATE.zip`) installs or updates it too, keeping its settings and list of installed plugins.
@@ -22,7 +22,10 @@ The `Full` variant (`FasterARK_psp_full.zip`) contains the following extras:
 - In the `XMB` it's `★ Plugin Manager`, right under `★ Custom Launcher`, and it's listed in the `Custom Launcher` too.
 - Installed plugins can also be listed in the `XMB`, in a `Plugins` category that takes the place of the defunct `PlayStation Network` column. It's off by default: turn it on in the app's `Settings`.
 - If the `XMB` ever fails to start with the category on, hold `START` while the `XMB` loads, then turn the category off in the app.
-- Store format, building and testing: [PluginManager/README.md](PluginManager/README.md).
+- Store format, building and testing: [the Plugin Manager's README](https://github.com/KKaramaligkas/PluginManager#readme). The store that installed copies download is [PluginManager/store](PluginManager/store).
+
+# Source
+Flow and the Plugin Manager have their own repositories, [Flow](https://github.com/KKaramaligkas/Flow) and [PluginManager](https://github.com/KKaramaligkas/PluginManager), included here as the submodules `Flow` and `PluginManager/app`. Clone with `git clone --recursive`, or run `git submodule update --init --recursive` in an existing clone, before running `make`.
 
 
 

@@ -17,7 +17,7 @@ def versions():
     suffix = re.search(r'^#define ARK_VERSION_SUFFIX\s+"([a-zA-Z0-9_-]*)"', header, re.M)
     ark = ".".join(numbers) + (suffix.group(1) if suffix else "")
     pm = re.search(r'^#define PM_VERSION\s+"([a-zA-Z0-9._-]+)"',
-                   (ROOT / "PluginManager/src/version.h").read_text(), re.M).group(1)
+                   (ROOT / "PluginManager/app/src/version.h").read_text(), re.M).group(1)
     return ark, pm
 
 
@@ -26,10 +26,11 @@ def prepare(store, ark_version, pm_version, artifacts=None):
     tag = "ARK-" + ark_version
     expected = {"ark": (ark_version, "ARK_UPDATE.zip"), "pluginmanager": (pm_version, "PluginManager.zip")}
     # The browser is optional in older stores, but its own archive also needs
-    # an external checksum manifest while that archive is being built.
+    # an external checksum manifest while that archive is being built. Flow
+    # keeps ARK Browser's store id, so installed copies update into Flow.
     browser = re.search(r'^#define APP_VERSION\s+"([a-zA-Z0-9._-]+)"',
-                        (ROOT / "Browser/src/version.h").read_text(), re.M).group(1)
-    expected["arkbrowser"] = (browser, "ARKBrowser.zip")
+                        (ROOT / "Flow/src/version.h").read_text(), re.M).group(1)
+    expected["arkbrowser"] = (browser, "Flow.zip")
     for entry in store["entries"]:
         if entry["id"] not in expected:
             continue

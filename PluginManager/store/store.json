@@ -6,14 +6,14 @@
     "url": "https://raw.githubusercontent.com/kkaramaligkas/fasterark_powerup/main/PluginManager/store/store.json",
     "iconBase": "https://raw.githubusercontent.com/kkaramaligkas/fasterark_powerup/main/PluginManager/store/icons/",
     "version": 1,
-    "revision": 13
+    "revision": 14
   },
   "entries": [
     {
       "id": "ark",
       "title": "ARK-5",
       "author": "PSP-Arkfive",
-      "version": "5.1.14",
+      "version": "5.1.15",
       "category": "utility",
       "license": "GPL-3.0",
       "website": "https://github.com/kkaramaligkas/fasterark_powerup",
@@ -24,9 +24,9 @@
       "install": [
         {
           "type": "download",
-          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/ARK_UPDATE.zip",
+          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/ARK_UPDATE.zip",
           "file": "ARK_UPDATE.zip",
-          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/SHA256SUMS",
+          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/SHA256SUMS",
           "checksumFile": "ARK_UPDATE.zip"
         },
         {
@@ -61,9 +61,9 @@
       "install": [
         {
           "type": "download",
-          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/PluginManager.zip",
+          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/PluginManager.zip",
           "file": "PluginManager.zip",
-          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/SHA256SUMS",
+          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/SHA256SUMS",
           "checksumFile": "PluginManager.zip"
         },
         {
@@ -80,14 +80,14 @@
     },
     {
       "id": "arkbrowser",
-      "title": "ARK Browser",
+      "title": "Flow",
       "author": "FasterARK powerup",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "category": "homebrew",
       "license": "GPL-3.0",
-      "website": "https://github.com/KKaramaligkas/FasterARK_powerup/tree/main/Browser",
-      "description": "Lays pages out on the PSP with CSS, and you click links and fill in forms with a pointer on the analog stick. Runs page JavaScript on the device, keeps cookies, and uses verified TLS 1.2 HTTPS.",
-      "notes": "Needs Wi-Fi and a correctly set PSP date. PSP Street has no Wi-Fi. Tested in PPSSPP on twelve real sites; not yet tested on a real PSP.",
+      "website": "https://github.com/KKaramaligkas/Flow",
+      "description": "A web browser for the PSP, formerly ARK Browser. Lays pages out with CSS and shows their JPEG, PNG and GIF pictures, and you click links and fill in forms with a pointer on the analog stick. Runs page JavaScript on the device, keeps cookies, and uses verified TLS 1.2 HTTPS.",
+      "notes": "Needs Wi-Fi and a correctly set PSP date. PSP Street has no Wi-Fi. Updating ARK Browser installs Flow in PSP/GAME/Flow, and Flow's first start moves your downloads and cookies there. Tested in PPSSPP on twelve real sites; not yet tested on a real PSP.",
       "compatibility": {
         "models": [
           "1000",
@@ -100,23 +100,23 @@
       "install": [
         {
           "type": "download",
-          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/ARKBrowser.zip",
-          "file": "ARKBrowser.zip",
-          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.14/SHA256SUMS",
-          "checksumFile": "ARKBrowser.zip"
+          "url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/Flow.zip",
+          "file": "Flow.zip",
+          "sha256Url": "https://github.com/KKaramaligkas/FasterARK_powerup/releases/download/ARK-5.1.15/SHA256SUMS",
+          "checksumFile": "Flow.zip"
         },
         {
           "type": "extract",
-          "file": "ARKBrowser.zip",
-          "input": "PSP/GAME/ARKBrowser/",
-          "output": "%GAME%ARKBrowser/",
+          "file": "Flow.zip",
+          "input": "PSP/GAME/Flow/",
+          "output": "%GAME%Flow/",
           "keep": [
             "downloads/*"
           ]
         },
         {
           "type": "message",
-          "text": "Launch ARK Browser from the Game column. Triangle opens the address keyboard."
+          "text": "Launch Flow from the Game column. Triangle opens the address keyboard."
         }
       ]
     },

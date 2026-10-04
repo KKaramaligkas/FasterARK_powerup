@@ -14,5 +14,5 @@ include $(PSPSDK)/lib/build.mak
 
 %.o: ../../%.c
 	$(CC) $(CFLAGS) $(addprefix -I,$(INCDIR)) -I$(PSPSDK)/include -c $< -o $@
-entropy.o: ../../../../PluginManager/src/entropy.c
+entropy.o: ../../../../PluginManager/app/src/entropy.c
 	$(CC) $(CFLAGS) -I$(PSPSDK)/include -c $< -o $@

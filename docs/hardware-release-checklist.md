@@ -76,15 +76,17 @@ and restart recovery, and a GitHub Actions package build. **No hardware result
 for these new changes has been recorded.** Add results and evidence here before
 describing a release candidate as hardware-tested.
 
-## ARK Browser validation (not yet tested on hardware)
+## Flow (formerly ARK Browser) validation (not yet tested on hardware)
 
 Record the exact build, model, firmware, storage device, access point, and page URLs.
 
-- [ ] Launch standalone `ARKBrowser.zip` from Game; confirm the CA bundle loads.
-- [ ] Install ARK Browser with Plugin Manager on PSP-3000. Record the Plugin Manager version and the last displayed installation stage if it stalls.
+- [ ] Launch standalone `Flow.zip` from Game; confirm the CA bundle loads.
+- [ ] Install Flow with Plugin Manager on PSP-3000. Record the Plugin Manager version and the last displayed installation stage if it stalls.
+- [ ] With ARK Browser 0.3.1 installed and some downloads and cookies in `PSP/GAME/ARKBrowser`, update it to Flow from Plugin Manager. Launch Flow: it reports what it moved, `PSP/GAME/ARKBrowser` is gone (no corrupted data icon in Game), the downloads are in `PSP/GAME/Flow/downloads`, and a site you were signed in to still knows you.
 - [ ] Cancel while downloading release checksums and the browser archive, including a server that stops responding; return to the store and retry successfully.
 - [ ] Check HOME exit during installation, then relaunch Plugin Manager and confirm recovery completes without changing the previous installation.
 - [ ] On PSP-1000, open a text page over verified TLS 1.2 without running out of memory.
+- [ ] Open a page with many pictures (for example apache.org) on PSP-1000 and on PSP-2000/3000: pictures appear nearest to the screen first, the status bar counts those still loading, scrolling stays smooth, and text doesn't jump when the page is laid out again. Open a link while pictures load; the next page opens.
 - [ ] Open a plain HTTP page; check the unencrypted indicator.
 - [ ] Reject expired/untrusted/wrong-host certificates; check clock-error guidance.
 - [ ] Reject a server restricted to TLS 1.0/1.1 and an HTTPS-to-HTTP redirect.
